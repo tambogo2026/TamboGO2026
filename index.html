@@ -1,0 +1,2817 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#09090b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TamboGo">
+<meta name="description" content="TamboGo: motos y tuctucs en El Tambo, Cauca. Tú propones el precio.">
+<title>TamboGo · Motos y tuctucs en El Tambo</title>
+<link id="fav" rel="icon" href="icons/icon-192.png">
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'] } } } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+  :root {
+    --bg: #09090b; --glass: rgba(18, 18, 21, 0.85);
+    --em: #10b981; --cy: #06b6d4; --rose: #f43f5e;
+    --spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  [hidden] { display: none !important; }
+  :root { --extra: 0px; }
+  html { height: var(--app-h, 100%); }
+  html, body { margin: 0; background: var(--bg); overscroll-behavior: none; overflow: hidden; }
+  body { height: var(--app-h, 100%); }
+  #app { position: fixed; left: 0; top: 0; width: 100%; height: var(--app-h, 100%); overflow: hidden; transform: translateZ(0); }
+  body { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; color: #fafafa; -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+  button[disabled] { cursor: not-allowed; }
+  a { color: inherit; text-decoration: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+  :focus-visible { outline: 2px solid var(--em); outline-offset: 2px; }
+
+  .glass { background: var(--glass); -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); border: 1px solid rgba(255,255,255,.1); }
+  .glass-in { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+  .glow-em { box-shadow: 0 0 25px -5px rgba(16,185,129,.25); }
+  .glow-cy { box-shadow: 0 0 25px -5px rgba(6,182,212,.25); }
+  .glow-rose { box-shadow: 0 0 25px -5px rgba(244,63,94,.25); }
+
+  .tap { transition: all .4s var(--spring); }
+  .tap:active { transform: scale(.95); }
+
+  .cta { width: 100%; padding: 16px; border-radius: 18px; font-weight: 800; font-size: 15px; background: linear-gradient(180deg,#34d399,#10b981); color: #032a1e; box-shadow: 0 8px 30px -8px rgba(16,185,129,.6), inset 0 1px 0 rgba(255,255,255,.35); display: block; text-align: center; }
+  .cta[disabled], .cta.off { opacity: .4; box-shadow: none; }
+  .btn-ghost { padding: 13px 14px; border-radius: 16px; font-weight: 700; font-size: 13px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); text-align: center; }
+  .btn-danger { padding: 13px 14px; border-radius: 16px; font-weight: 700; font-size: 13px; background: rgba(244,63,94,.12); border: 1px solid rgba(244,63,94,.35); color: #fb7185; text-align: center; }
+  .btn-nequi { padding: 14px; border-radius: 16px; font-weight: 800; font-size: 14px; background: rgba(6,182,212,.14); border: 1px solid rgba(6,182,212,.45); color: #22d3ee; width: 100%; }
+  .mini-cta { margin-top: 4px; padding: 7px 14px; border-radius: 12px; font-weight: 800; font-size: 12px; background: #10b981; color: #032a1e; }
+  .stepbtn { width: 48px; height: 48px; border-radius: 16px; font-size: 20px; font-weight: 800; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); }
+
+  .chip { flex: none; padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: #d4d4d8; display: inline-flex; align-items: center; }
+  .chip.on { background: rgba(16,185,129,.15); border-color: rgba(16,185,129,.55); color: #6ee7b7; }
+  .chip.cy.on { background: rgba(6,182,212,.15); border-color: rgba(6,182,212,.55); color: #67e8f9; }
+
+  .veh { text-align: left; padding: 12px; border-radius: 18px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); }
+  .veh.on { border-color: #10b981; background: rgba(16,185,129,.09); box-shadow: 0 0 25px -5px rgba(16,185,129,.35); }
+  .pay { padding: 12px; border-radius: 16px; font-weight: 700; font-size: 13px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .pay.on-cash { border-color: #10b981; background: rgba(16,185,129,.1); color: #6ee7b7; }
+  .pay.on-nequi { border-color: #06b6d4; background: rgba(6,182,212,.12); color: #67e8f9; box-shadow: 0 0 25px -5px rgba(6,182,212,.35); }
+
+  .avatar { width: 44px; height: 44px; border-radius: 14px; flex: none; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; background: linear-gradient(135deg,#27272a,#18181b); border: 1px solid rgba(255,255,255,.12); color: #a7f3d0; overflow: hidden; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .status-pill.em { background: rgba(16,185,129,.14); color: #6ee7b7; }
+  .status-pill.cy { background: rgba(6,182,212,.14); color: #67e8f9; }
+  .status-pill.rose { background: rgba(244,63,94,.14); color: #fda4af; }
+  .dot-em { width: 12px; height: 12px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,.2), 0 0 12px rgba(16,185,129,.8); flex: none; }
+
+  .inp { width: 100%; padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: #fafafa; font-family: inherit; font-size: 15px; font-weight: 600; outline: none; transition: all .3s var(--spring); }
+  .inp::placeholder { color: #71717a; font-weight: 500; }
+  .inp:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,.15); }
+  .inp.err { border-color: #f43f5e; box-shadow: 0 0 0 4px rgba(244,63,94,.15); }
+
+  /* Sheets */
+  .sheet { position: fixed; left: 0; right: 0; bottom: calc(var(--extra, 0px) * -1); margin-inline: auto; width: 100%; max-width: 520px; z-index: 500; border-radius: 30px 30px 0 0; border-bottom: 0; transition: transform .5s var(--spring); display: flex; flex-direction: column; max-height: 82vh; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 14px + var(--extra, 0px)); box-shadow: 0 -20px 60px -20px rgba(0,0,0,.8); }
+  .sheet::after { content: ''; position: absolute; left: 0; right: 0; top: calc(100% - 1px); height: 400px; background: #121215; pointer-events: none; }
+  .sheet.collapsed { transform: translateY(calc(100% - 92px)); }
+  .sheet.hidden-sheet { transform: translateY(115%); pointer-events: none; }
+  .handle-hit { padding: 8px 0 4px; cursor: grab; flex: none; }
+  .handle { width: 48px; height: 6px; border-radius: 999px; background: #3f3f46; margin: 0 auto; }
+  .sheet-body { overflow-y: auto; padding: 4px 20px 8px; overscroll-behavior: contain; }
+
+  /* Barra superior */
+  .role-seg { position: relative; display: grid; grid-template-columns: 1fr 1fr; width: 168px; padding: 4px; border-radius: 999px; background: rgba(255,255,255,.05); }
+  .role-pill { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px); border-radius: 999px; background: linear-gradient(180deg,#34d399,#10b981); box-shadow: 0 4px 18px -4px rgba(16,185,129,.7); transition: transform .5s var(--spring); }
+  .role-btn { position: relative; z-index: 1; padding: 8px 0; font-size: 12px; font-weight: 800; color: #a1a1aa; transition: color .3s; }
+  .role-btn.on { color: #032a1e; }
+  #locate-btn { position: fixed; right: 16px; z-index: 550; top: calc(env(safe-area-inset-top, 0px) + 78px); width: 46px; height: 46px; border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #6ee7b7; }
+
+  /* Radar */
+  .radar { position: relative; width: 190px; height: 190px; margin: 4px auto 10px; border-radius: 50%; }
+  .radar.sm { width: 120px; height: 120px; }
+  .radar .grid { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(16,185,129,.25); background: radial-gradient(circle, rgba(16,185,129,.10) 0%, rgba(16,185,129,0) 70%); }
+  .radar .grid::before, .radar .grid::after { content: ''; position: absolute; border-radius: 50%; border: 1px solid rgba(16,185,129,.18); }
+  .radar .grid::before { inset: 22%; } .radar .grid::after { inset: 44%; }
+  .radar .ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(16,185,129,.7); opacity: 0; animation: pulse-ring 3s cubic-bezier(.16,1,.3,1) infinite; }
+  .radar .ring:nth-child(3) { animation-delay: .75s; } .radar .ring:nth-child(4) { animation-delay: 1.5s; } .radar .ring:nth-child(5) { animation-delay: 2.25s; }
+  .radar .sweep { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, rgba(16,185,129,0) 0deg, rgba(16,185,129,0) 250deg, rgba(16,185,129,.55) 358deg, rgba(110,231,183,.9) 360deg); animation: spin 2.2s linear infinite; }
+  .radar .core { position: absolute; inset: 0; margin: auto; width: 46px; height: 46px; border-radius: 50%; background: #052e22; border: 1px solid rgba(16,185,129,.7); display: flex; align-items: center; justify-content: center; color: #6ee7b7; box-shadow: 0 0 25px rgba(16,185,129,.5); z-index: 2; }
+  .radar.sm .core { width: 34px; height: 34px; }
+  @keyframes pulse-ring { 0% { transform: scale(.2); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .shimmer { background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.14) 50%, rgba(255,255,255,.04) 75%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* Mapa */
+  .leaflet-container { background: #09090b; font-family: inherit; }
+  .leaflet-control-attribution { background: rgba(9,9,11,.7) !important; color: #71717a !important; font-size: 9px !important; }
+  .leaflet-control-attribution a { color: #a1a1aa !important; }
+  .leaflet-tooltip.tt { background: rgba(18,18,21,.92); border: 1px solid rgba(255,255,255,.15); color: #fafafa; font-weight: 700; font-size: 11px; border-radius: 10px; padding: 3px 8px; box-shadow: none; }
+  .leaflet-tooltip-top.tt::before { border-top-color: rgba(18,18,21,.92); }
+  .mk-origin { position: relative; width: 44px; height: 44px; }
+  .mk-origin .halo { position: absolute; inset: 0; border-radius: 50%; background: rgba(16,185,129,.35); animation: halo 2.2s ease-out infinite; }
+  .mk-origin .halo.h2 { animation-delay: 1.1s; }
+  .mk-origin .dot { position: absolute; inset: 0; margin: auto; width: 18px; height: 18px; border-radius: 50%; background: #10b981; border: 3px solid #ecfdf5; box-shadow: 0 0 18px #10b981; }
+  @keyframes halo { 0% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1); opacity: 0; } }
+  .mk-drop { position: relative; width: 36px; height: 48px; filter: drop-shadow(0 8px 6px rgba(0,0,0,.6)); }
+  .mk-drop-shadow { position: absolute; left: 8px; bottom: 0; width: 20px; height: 7px; border-radius: 50%; background: rgba(0,0,0,.55); filter: blur(2px); }
+  .mk-driver { position: relative; width: 52px; height: 52px; }
+  .mk-driver .orbit { position: absolute; inset: 0; border-radius: 50%; border: 1.5px dashed rgba(16,185,129,.7); animation: spin 6s linear infinite; }
+  .mk-driver .orbit::after { content: ''; position: absolute; top: -4px; left: 50%; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #34d399; box-shadow: 0 0 10px #10b981; }
+  .mk-driver .card { position: absolute; inset: 7px; border-radius: 50%; background: rgba(18,18,21,.95); border: 1px solid rgba(16,185,129,.7); display: flex; align-items: center; justify-content: center; color: #6ee7b7; box-shadow: 0 6px 20px rgba(0,0,0,.6), 0 0 22px -4px rgba(16,185,129,.7); }
+  .mk-amb { width: 30px; height: 30px; border-radius: 50%; background: rgba(18,18,21,.9); border: 1px solid rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; color: #a1a1aa; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+  .mk-me { width: 20px; height: 20px; border-radius: 50%; background: #38bdf8; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(56,189,248,.25), 0 2px 10px rgba(0,0,0,.6); }
+  #center-pin { position: fixed; left: 50%; top: calc(50% + var(--extra, 0px) / 2); z-index: 450; transform: translate(-50%, -100%); pointer-events: none; filter: drop-shadow(0 10px 8px rgba(0,0,0,.6)); animation: pin-bob 1.6s var(--spring) infinite alternate; }
+  @keyframes pin-bob { from { transform: translate(-50%, -100%); } to { transform: translate(-50%, calc(-100% - 6px)); } }
+
+  /* Toasts */
+  #toasts { position: fixed; left: 0; right: 0; z-index: 1000; top: calc(env(safe-area-inset-top, 0px) + 74px); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; padding: 0 16px; }
+  .toast { display: flex; align-items: center; gap: 10px; max-width: 420px; padding: 11px 16px; border-radius: 16px; font-size: 13px; font-weight: 600; background: rgba(18,18,21,.94); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,.12); animation: toast-in .5s var(--spring); transition: all .4s var(--spring); }
+  .toast.ok i { color: #34d399; } .toast.warn i { color: #fbbf24; } .toast.danger { border-color: rgba(244,63,94,.5); } .toast.danger i { color: #fb7185; } .toast.info i { color: #22d3ee; }
+  .toast.out { opacity: 0; transform: translateY(-10px) scale(.96); }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(-14px) scale(.94); } to { opacity: 1; transform: none; } }
+
+  /* Modal */
+  #modal { position: fixed; inset: 0 0 calc(var(--extra, 0px) * -1) 0; z-index: 900; display: none; align-items: flex-end; justify-content: center; background: rgba(0,0,0,.6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  #modal.open { display: flex; }
+  #modal .panel { width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; border-radius: 30px 30px 0 0; padding: 12px 20px calc(env(safe-area-inset-bottom, 0px) + 20px + var(--extra, 0px)); animation: rise .6s var(--spring); }
+  @keyframes rise { from { transform: translateY(60%); opacity: 0; } to { transform: none; opacity: 1; } }
+  .check-pop { animation: pop .6s var(--spring); }
+  @keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .star { font-size: 30px; color: #3f3f46; transition: all .4s var(--spring); }
+  .star.on { color: #fbbf24; text-shadow: 0 0 18px rgba(251,191,36,.6); }
+  .star:active { transform: scale(.85); }
+
+  /* Pantallas completas (splash, registro, menú...) */
+  .screen { position: fixed; inset: 0 0 calc(var(--extra, 0px) * -1) 0; z-index: 950; overflow-y: auto; background: radial-gradient(120% 60% at 50% 0%, rgba(16,185,129,.14) 0%, rgba(9,9,11,0) 60%), #09090b; padding: calc(env(safe-area-inset-top, 0px) + 14px) 20px calc(env(safe-area-inset-bottom, 0px) + 24px + var(--extra, 0px)); animation: screen-in .5s var(--spring); }
+  @keyframes screen-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+  .screen-inner { max-width: 520px; margin: 0 auto; min-height: 100%; }
+  .step-bar { display: flex; gap: 6px; margin: 4px 0 18px; }
+  .step-bar i { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,.1); transition: background .4s var(--spring); }
+  .step-bar i.on { background: #10b981; box-shadow: 0 0 10px rgba(16,185,129,.6); }
+  .menu-item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 6px; text-align: left; font-weight: 700; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .menu-item .ic { width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; color: #6ee7b7; flex: none; }
+  .splash-wrap { position: relative; display: flex; align-items: center; justify-content: center; width: 220px; height: 220px; margin: 0 auto; }
+  .splash-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(16,185,129,.6); opacity: 0; animation: pulse-ring 2.4s cubic-bezier(.16,1,.3,1) infinite; }
+  .splash-ring:nth-child(2) { animation-delay: .8s; } .splash-ring:nth-child(3) { animation-delay: 1.6s; }
+  .splash-logo { animation: pin-drop .9s var(--spring) both; filter: drop-shadow(0 0 30px rgba(16,185,129,.5)); }
+  @keyframes pin-drop { from { transform: translateY(-50px) scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+  .fade-up { animation: fade-up .8s var(--spring) .35s both; }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  #qr-box, #nq-box { display: flex; align-items: center; justify-content: center; }
+  #qr-box img, #nq-box img { display: block; }
+
+  #map.dark-tiles .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.82) contrast(.92) saturate(.5); }
+
+  #notice { position: absolute; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 72px); z-index: 590; max-width: calc(100% - 32px); padding: 8px 14px; border-radius: 14px; font-size: 12px; font-weight: 700; text-align: center; background: rgba(6,182,212,.16); border: 1px solid rgba(6,182,212,.45); color: #67e8f9; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+  #notice.bad { background: rgba(244,63,94,.16); border-color: rgba(244,63,94,.5); color: #fda4af; }
+  #offline { position: absolute; left: 0; right: 0; top: 0; z-index: 1100; padding: calc(env(safe-area-inset-top, 0px) + 6px) 12px 6px; text-align: center; font-size: 12px; font-weight: 700; background: #be123c; color: #fff; }
+
+  .text-grad { background: linear-gradient(90deg, #34d399, #06b6d4); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo-glow { display: inline-block; filter: drop-shadow(0 14px 32px rgba(16,185,129,.45)); }
+  .cta { --sp: #032a1e; } .mini-cta { --sp: #032a1e; } .btn-ghost { --sp: #fafafa; } .btn-danger { --sp: #fb7185; } .btn-nequi { --sp: #22d3ee; }
+  .loading { position: relative; pointer-events: none; color: transparent !important; }
+  .loading * { color: transparent !important; }
+  .loading::after { content: ''; position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; border: 2.5px solid var(--sp, #fff); border-right-color: transparent; animation: spin .7s linear infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+
+<body>
+<div id="app">
+  <div id="map" style="position:fixed; top:0; left:0; right:0; bottom:calc(var(--extra, 0px) * -1); z-index:0;"></div>
+  <div style="position:fixed; inset:0; z-index:1; pointer-events:none; background: linear-gradient(180deg, rgba(9,9,11,.75) 0%, rgba(9,9,11,0) 22%);"></div>
+
+  <header class="fixed top-0 inset-x-0 z-[600] px-4 pointer-events-none" style="padding-top: calc(env(safe-area-inset-top, 0px) + 12px);">
+    <div class="mx-auto max-w-[520px] glass rounded-full p-1.5 flex items-center justify-between gap-2 pointer-events-auto glow-em">
+      <div class="flex items-center gap-2">
+        <button id="hdr-avatar" class="avatar tap !w-9 !h-9 !rounded-full" data-act="openMenu" aria-label="Abrir menú"><i class="fa-solid fa-bars"></i></button>
+        <span id="hdr-logo" class="flex items-center gap-2"></span>
+      </div>
+      <div class="role-seg" role="tablist" aria-label="Cambiar de modo">
+        <div class="role-pill" id="role-pill"></div>
+        <button class="role-btn tap on" data-act="setRole" data-role="passenger" role="tab">Pasajero</button>
+        <button class="role-btn tap" data-act="setRole" data-role="driver" role="tab">Conductor</button>
+      </div>
+    </div>
+  </header>
+
+  <button id="locate-btn" class="glass tap" data-act="locate" aria-label="Centrar en mi ubicación"><i class="fa-solid fa-location-crosshairs"></i></button>
+  <div id="center-pin" hidden></div>
+  <div id="toasts" aria-live="polite"></div>
+  <div id="notice" hidden></div>
+  <div id="offline" hidden><i class="fa-solid fa-wifi-slash"></i> Sin conexión. Revisando…</div>
+
+  <section id="sheet-passenger" class="sheet glass">
+    <div class="handle-hit" data-act="toggleSheet" aria-label="Expandir o contraer panel"><div class="handle"></div></div>
+    <div id="pass-body" class="sheet-body"></div>
+  </section>
+
+  <section id="sheet-driver" class="sheet glass hidden-sheet">
+    <div class="handle-hit" data-act="toggleSheet" aria-label="Expandir o contraer panel"><div class="handle"></div></div>
+    <div id="drv-body" class="sheet-body"></div>
+  </section>
+
+  <div id="modal" role="dialog" aria-modal="true" aria-label="Recargar billetera">
+    <div class="panel glass" id="modal-panel"></div>
+  </div>
+
+  <div id="screen" class="screen" hidden><div id="screen-inner" class="screen-inner"></div></div>
+
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script src="mapbase.js"></script>
+<script>
+'use strict';
+
+/* =====================================================================
+   UTILIDADES
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
+const fmtPhone = s => String(s).replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3');
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const uid = () => Math.random().toString(36).slice(2, 9);
+const initials = n => String(n || '?').split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const payLabel = p => (p === 'nequi' ? 'Nequi' : 'Efectivo');
+const vehLabel = v => (v === 'moto' ? 'Moto' : 'Tuctuc');
+const shortAddr = a => String(a || '').split(',')[0];
+
+const Icons = {
+  moto: (s = 24) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="17" r="3"/><circle cx="18.5" cy="17" r="3"/><path d="M5.5 17l3-6h6l2.5 3.5"/><path d="M14.5 11l-1.2-3.5H10"/><path d="M16 14.5l2.5 2.5"/></svg>`,
+  tuctuc: (s = 24) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 16V9.5L6 6h9.5l3 4.5 3 1.5V16"/><path d="M6 6v4.5H2.5"/><path d="M11 10.5h7.5"/><circle cx="6" cy="17.5" r="2.2"/><circle cx="17.5" cy="17.5" r="2.2"/></svg>`
+};
+const vIcon = (v, s) => (v === 'moto' ? Icons.moto(s) : Icons.tuctuc(s));
+
+/* ---------- LOGO TamboGo: pin de mapa con radar y anillo de pista ---------- */
+let _lg = 0;
+const Logo = {
+  icon(size = 40, bg = true) {
+    const id = 'lg' + (++_lg);
+    const defs = `<defs><linearGradient id="${id}a" x1="4" y1="2" x2="60" y2="62" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#6ee7b7"/><stop offset=".5" stop-color="#10b981"/><stop offset="1" stop-color="#06b6d4"/></linearGradient><linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".30"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>`;
+    const pin = 'M32 9c-8.6 0-15.5 6.7-15.5 15.1C16.5 35.4 32 48.5 32 48.5s15.5-13.1 15.5-24.4C47.5 15.7 40.6 9 32 9z';
+    const head = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="TamboGo">${defs}`;
+    if (bg) return `${head}<rect width="64" height="64" rx="18" fill="url(#${id}a)"/><rect width="64" height="64" rx="18" fill="url(#${id}b)"/><path d="${pin}" fill="#04211a"/><circle cx="32" cy="24.2" r="6.2" fill="#ecfdf5"/><ellipse cx="32" cy="55.5" rx="13.5" ry="3.4" fill="none" stroke="#04211a" stroke-width="3" opacity=".92"/></svg>`;
+    return `${head}<path d="${pin}" fill="url(#${id}a)"/><circle cx="32" cy="24.2" r="6.2" fill="#09090b"/><ellipse cx="32" cy="55.5" rx="13.5" ry="3.4" fill="none" stroke="url(#${id}a)" stroke-width="3"/></svg>`;
+  },
+  word: () => `<span class="font-extrabold tracking-tight">Tambo<span class="text-grad">Go</span></span>`
+};
+
+function pinSvg(c1, c2) {
+  const id = 'pn' + (++_lg);
+  return `<svg viewBox="0 0 36 48" width="40" height="54" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><path d="M18 2C9.7 2 3 8.6 3 16.8 3 27.6 18 45 18 45s15-17.4 15-28.2C33 8.6 26.3 2 18 2z" fill="url(#${id})" stroke="#fff" stroke-opacity=".75" stroke-width="1.5"/><circle cx="18" cy="16.5" r="5.5" fill="#fff"/></svg>`;
+}
+
+const Timers = {
+  m: {}, iv: {},
+  set(k, fn, ms) { clearTimeout(this.m[k]); this.m[k] = setTimeout(fn, ms); },
+  clear(k) { clearTimeout(this.m[k]); delete this.m[k]; },
+  clearPrefix(p) { Object.keys(this.m).filter(k => k.startsWith(p)).forEach(k => this.clear(k)); },
+  every(k, fn, ms) { clearInterval(this.iv[k]); this.iv[k] = setInterval(fn, ms); },
+  stopEvery(k) { clearInterval(this.iv[k]); delete this.iv[k]; }
+};
+
+const Sound = {
+  ctx: null, muted: false,
+  init() { try { this.muted = localStorage.getItem('tambogo.mute') === '1'; } catch (e) { this.muted = false; } },
+  toggle() {
+    this.muted = !this.muted;
+    try { localStorage.setItem('tambogo.mute', this.muted ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
+    if (!this.muted) this.play('ok');
+    return this.muted;
+  },
+  unlock() {
+    try {
+      this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    } catch (e) { /* audio no disponible */ }
+  },
+  tone(freq, start, dur, vol, type) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain(), t0 = c.currentTime + start;
+    o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+  },
+  bell(freq, start, vol) { this.tone(freq, start, 0.55, vol); this.tone(freq * 2, start, 0.3, vol * 0.22); },
+  play(name) {
+    if (this.muted) return;
+    this.unlock(); if (!this.ctx) return;
+    const B = (f, s, v) => this.bell(f, s, v);
+    try {
+      switch (name) {
+        case 'tap': this.tone(700, 0, 0.05, 0.02, 'triangle'); break;
+        case 'ok': B(784, 0, 0.045); break;
+        case 'info': B(659, 0, 0.03); break;
+        case 'warn': B(466, 0, 0.045); B(392, 0.12, 0.04); break;
+        case 'error': B(349, 0, 0.05); B(294, 0.14, 0.045); break;
+        case 'success': B(523, 0, 0.055); B(659, 0.1, 0.055); B(784, 0.2, 0.06); break;
+        case 'offer': B(659, 0, 0.055); B(880, 0.12, 0.05); break;
+        case 'arrive': B(523, 0, 0.055); B(784, 0.15, 0.055); break;
+        case 'coin': B(988, 0, 0.045); B(1319, 0.09, 0.05); break;
+        case 'request': B(587, 0, 0.07); B(880, 0.15, 0.07); B(587, 0.6, 0.05); B(880, 0.75, 0.05); break;
+        default: break;
+      }
+    } catch (e) { /* sin sonido */ }
+  },
+  beep() { this.play('request'); }
+};
+
+const Awake = {
+  lock: null,
+  async on() {
+    try {
+      if ('wakeLock' in navigator && !this.lock) {
+        this.lock = await navigator.wakeLock.request('screen');
+        this.lock.addEventListener('release', () => { this.lock = null; });
+      }
+    } catch (e) { /* no disponible */ }
+  },
+  off() { try { if (this.lock) this.lock.release(); } catch (e) { /* ya liberado */ } this.lock = null; },
+  sync() {
+    const t = AppState.activeTrip;
+    const need = AppState.driver.isOnline || !!(t && ['searching', 'accepted', 'arrived', 'in_progress'].includes(t.status));
+    if (need) this.on(); else this.off();
+  }
+};
+
+const Notify = {
+  ask() {
+    if (!('Notification' in window)) { toast('Este navegador no permite avisos.', 'warn'); return; }
+    Notification.requestPermission().then(p => toast(p === 'granted' ? 'Avisos activados.' : 'No se activaron los avisos.', p === 'granted' ? 'ok' : 'warn'));
+  },
+  show(title, body) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted' || !document.hidden) return;
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(r => r.showNotification(title, { body, icon: 'icons/icon-192.png', vibrate: [120, 60, 120] })).catch(() => new Notification(title, { body }));
+      else new Notification(title, { body });
+    } catch (e) { /* sin avisos */ }
+  }
+};
+
+/* =====================================================================
+   ESTADO GLOBAL
+   ===================================================================== */
+const AppState = {
+  currentRole: 'passenger', // 'passenger' | 'driver'
+
+  passenger: {
+    pickup: { lat: 2.4522, lng: -76.8118, address: 'Parque Principal, El Tambo' },
+    dropoff: { lat: 2.4560, lng: -76.8150, address: 'Barrio El Rosario' },
+    selectedVehicle: 'moto', // 'moto' | 'tuctuc'
+    offeredFare: 3000,
+    paymentMethod: 'nequi', // 'cash' | 'nequi'
+    tripStatus: 'idle', // 'idle' | 'searching' | 'accepted' | 'arrived' | 'in_progress' | 'completed'
+    pickupMode: 'gps', // 'gps' | 'manual'
+    note: ''
+  },
+
+  driver: {
+    isOnline: false,
+    walletBalance: 10000, // Saldo inicial en COP
+    commissionPerTrip: 300, // Comisión cobrada por carrera finalizada
+    vehicleType: 'tuctuc', // 'moto' | 'tuctuc'
+    name: 'Carlos Mario',
+    phone: '3123456789',
+    plate: 'TUC-123',
+    nequiNumber: '3123456789',
+    nequiQR: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=3123456789',
+    activeRequest: null
+  },
+
+  activeTrip: null,
+
+  /* Extensiones */
+  account: null, // { id, name, phone, avatar, passenger:true, driver:null|{...} }
+  session: false,
+  publicUrl: '',
+  me: { lat: null, lng: null, acc: null, ts: 0, status: 'idle' }, // idle | asking | ok | denied | unavailable | error
+  driverPos: { lat: 2.4535, lng: -76.8135 },
+  offers: [],
+  transactions: [],
+  history: [],
+  ui: { collapsed: false, recharge: false, rechargeState: 'select', rechargeAmount: 10000, pick: null }
+};
+
+const PLACES = [
+  { name: 'Parque Principal, El Tambo', short: 'Parque Principal', lat: 2.4522, lng: -76.8118 },
+  { name: 'Barrio El Rosario', short: 'El Rosario', lat: 2.4560, lng: -76.8150 },
+  { name: 'Plaza de mercado', short: 'Plaza de mercado', lat: 2.4501, lng: -76.8099 },
+  { name: 'Terminal de transporte', short: 'Terminal', lat: 2.4478, lng: -76.8163 },
+  { name: 'Hospital municipal', short: 'Hospital', lat: 2.4589, lng: -76.8087 },
+  { name: 'Estadio municipal', short: 'Estadio', lat: 2.4548, lng: -76.8201 },
+  { name: 'Barrio La Esperanza', short: 'La Esperanza', lat: 2.4467, lng: -76.8082 }
+];
+
+const SIM_DRIVERS = [
+  { name: 'Jhon Freddy Muñoz', vehicle: 'moto', plate: 'ABC-12D', rating: 4.9, phone: '3101112233' },
+  { name: 'Yeison Ramírez', vehicle: 'moto', plate: 'XYZ-45F', rating: 4.8, phone: '3112223344' },
+  { name: 'Cristian Ortiz', vehicle: 'moto', plate: 'DEF-78G', rating: 4.7, phone: '3123334455' },
+  { name: 'Marleny Gómez', vehicle: 'tuctuc', plate: 'TUC-207', rating: 4.9, phone: '3134445566' },
+  { name: 'Wilson Castro', vehicle: 'tuctuc', plate: 'TUC-315', rating: 4.8, phone: '3145556677' },
+  { name: 'Hernán Ruiz', vehicle: 'tuctuc', plate: 'TUC-118', rating: 4.6, phone: '3156667788' }
+];
+const SIM_PASSENGERS = ['María Fernanda', 'Andrés Felipe', 'Luz Dary', 'Diego Armando', 'Paola Andrea', 'Kevin Stiven', 'Rosa Elena'];
+
+/* =====================================================================
+   PERSISTENCIA
+   ===================================================================== */
+/* CONFIGURACIÓN: cambia por el Nequi (o cuenta) real de TamboGo donde los conductores recargan */
+const CONFIG = {
+  nequiPlataforma: '3000000000',
+  /* Correo del administrador: los enlaces de recuperación de contraseña llegan aquí (con el celular del usuario dentro de la dirección) */
+  emailBase: 'tambogo2026@gmail.com',
+  /* Mapa: OpenStreetMap (gratis, ideal para pruebas y pilotos). Para lanzar con muchos usuarios usa un proveedor con llave
+     (MapTiler, Stadia, etc.): pon su URL en tileUrl, usa {key} donde va la llave y ponla en tileKey. Si su estilo ya es oscuro, darkTiles:false */
+  tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  tileKey: '',
+  tileAttribution: '&copy; OpenStreetMap',
+  darkTiles: true,
+  /* Mapa vectorial nítido (OpenFreeMap, gratis y sin llave). Si falla, se usan los mosaicos de arriba. */
+  useVector: true,
+  vectorStyle: 'https://tiles.openfreemap.org/styles/positron',
+  vectorAttribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> datos de <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+  /* Firebase: pega aquí la configuración de tu proyecto (ver GUIA.md). Vacío = modo demo con datos simulados */
+  firebase: { apiKey: 'AIzaSyDRRgKjdC3t_qJj7DQcsnWjP4N-FK_nz6c', authDomain: 'tambogo-ff986.firebaseapp.com', projectId: 'tambogo-ff986', storageBucket: 'tambogo-ff986.firebasestorage.app', messagingSenderId: '299100259590', appId: '1:299100259590:web:fbd9e2d638518403780a87' }
+};
+
+const STORE_KEY = 'tambogo.v2';
+const Store = {
+  load() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (s.currentRole) AppState.currentRole = s.currentRole;
+      if (s.account) AppState.account = s.account;
+      AppState.session = !!s.session;
+      if (s.publicUrl) AppState.publicUrl = s.publicUrl;
+      if (s.passenger) {
+        const p = AppState.passenger;
+        if (s.passenger.selectedVehicle) p.selectedVehicle = s.passenger.selectedVehicle;
+        if (s.passenger.paymentMethod) p.paymentMethod = s.passenger.paymentMethod;
+        if (s.passenger.offeredFare) p.offeredFare = s.passenger.offeredFare;
+        if (s.passenger.dropoff) p.dropoff = s.passenger.dropoff;
+      }
+      if (s.driver && typeof s.driver.walletBalance === 'number') AppState.driver.walletBalance = s.driver.walletBalance;
+      if (Array.isArray(s.transactions)) AppState.transactions = s.transactions;
+      if (Array.isArray(s.history)) AppState.history = s.history;
+      Account.applyDriver();
+    } catch (e) { console.warn('No se pudo leer el estado guardado', e); }
+  },
+  save() {
+    try {
+      const p = AppState.passenger, d = AppState.driver;
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        currentRole: AppState.currentRole, account: AppState.account, session: AppState.session, publicUrl: AppState.publicUrl,
+        passenger: { selectedVehicle: p.selectedVehicle, paymentMethod: p.paymentMethod, offeredFare: p.offeredFare, dropoff: p.dropoff },
+        driver: { walletBalance: d.walletBalance },
+        transactions: AppState.transactions.slice(0, 30), history: AppState.history.slice(0, 50)
+      }));
+    } catch (e) { console.warn('No se pudo guardar el estado', e); }
+  }
+};
+
+/* =====================================================================
+   CUENTAS (registro de pasajeros y conductores)
+   ===================================================================== */
+const Account = {
+  registerPassenger(f) {
+    const a = AppState.account || { id: uid(), createdAt: Date.now(), driver: null };
+    a.name = f.name.trim(); a.phone = f.phone; a.passenger = true; a.payment = f.payment || 'cash';
+    AppState.account = a; AppState.session = true; AppState.passenger.paymentMethod = a.payment;
+    Store.save();
+  },
+  registerDriver(f) {
+    const a = AppState.account || { id: uid(), createdAt: Date.now(), passenger: true, payment: 'cash' };
+    a.name = f.name.trim(); a.phone = f.phone;
+    a.driver = { cedula: f.cedula, vehicleType: f.vehicleType, plate: f.plate, brand: f.brand.trim(), color: f.color.trim(), license: f.license.trim(), nequi: f.nequi, status: 'pending', rating: 5, joinedAt: Date.now() };
+    AppState.account = a; AppState.session = true;
+    this.applyDriver(); Store.save();
+  },
+  applyDriver() {
+    const a = AppState.account; if (!a) return;
+    const d = AppState.driver; d.name = a.name; d.phone = a.phone;
+    if (a.driver) { d.plate = a.driver.plate; d.vehicleType = a.driver.vehicleType; d.nequiNumber = a.driver.nequi; }
+  },
+  driverOk() { const a = AppState.account; return !!(a && a.driver && a.driver.status === 'approved'); },
+  name() { return AppState.account ? AppState.account.name : 'Pasajero'; }
+};
+
+function avatarHtml(inner) {
+  const a = AppState.account;
+  if (a && a.avatar) return `<img src="${a.avatar}" alt="Foto de perfil">`;
+  if (a) return esc(initials(a.name));
+  return inner || '<i class="fa-solid fa-bars"></i>';
+}
+
+function readAvatar(file, cb) {
+  const fr = new FileReader();
+  fr.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = c.height = 160;
+      const s = Math.min(img.width, img.height);
+      c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 160, 160);
+      cb(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+
+/* =====================================================================
+   GEO, TARIFAS, GPS Y GEOCODIFICACIÓN
+   ===================================================================== */
+const Geo = {
+  km(a, b) {
+    const R = 6371, r = x => x * Math.PI / 180;
+    const dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng);
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  },
+  road(a, b) { return this.km(a, b) * 1.35; },
+  lerp(a, b, t) { return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t }; },
+  etaMin(km) { return Math.max(1, Math.round(km / 0.35)); }
+};
+
+const Fare = {
+  rates: { moto: { base: 2500, perKm: 1000, min: 2500 }, tuctuc: { base: 3000, perKm: 1200, min: 3000 } },
+  suggestFor(v, a, b) { const r = this.rates[v]; return Math.max(r.min, Math.round((r.base + Geo.road(a, b) * r.perKm) / 500) * 500); },
+  suggest(v) { const p = AppState.passenger; return this.suggestFor(v || p.selectedVehicle, p.pickup, p.dropoff); }
+};
+
+const Geocode = {
+  cache: {},
+  async reverse(lat, lng) {
+    const k = lat.toFixed(4) + ',' + lng.toFixed(4);
+    if (this.cache[k]) return this.cache[k];
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=es`);
+      if (!r.ok) throw new Error('http');
+      const j = await r.json(), a = j.address || {};
+      const road = a.road || a.pedestrian || a.footway || a.path;
+      const zone = a.neighbourhood || a.suburb || a.quarter || a.hamlet || a.village || a.town || a.city;
+      let txt = [road && (a.house_number ? road + ' #' + a.house_number : road), zone].filter(Boolean).join(', ');
+      if (!txt) txt = (j.display_name || '').split(',').slice(0, 2).join(',').trim();
+      if (!txt) throw new Error('empty');
+      this.cache[k] = txt; return txt;
+    } catch (e) { return `Punto en el mapa (${lat.toFixed(4)}, ${lng.toFixed(4)})`; }
+  },
+  async search(q) {
+    const base = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=co&accept-language=es&viewbox=-77.4,2.8,-76.4,2.1&q=';
+    const run = async qq => { const r = await fetch(base + encodeURIComponent(qq)); if (!r.ok) throw new Error('http'); return r.json(); };
+    try {
+      let j = await run(q + ', El Tambo, Cauca');
+      if (!j.length) j = await run(q);
+      return j.map(x => { const p = (x.display_name || '').split(','); return { name: p.slice(0, 2).join(',').trim(), sub: p.slice(2, 4).join(',').trim(), lat: +x.lat, lng: +x.lon }; });
+    } catch (e) { return null; }
+  }
+};
+
+const GPS = {
+  watchId: null,
+  start() {
+    const me = AppState.me;
+    if (!navigator.geolocation) { me.status = 'unavailable'; GPS.paint(); return; }
+    if (this.watchId !== null) return;
+    me.status = 'asking'; this.paint();
+    this.watchId = navigator.geolocation.watchPosition(p => this.onFix(p), e => this.onErr(e), { enableHighAccuracy: true, maximumAge: 4000, timeout: 20000 });
+  },
+  onErr(e) {
+    const me = AppState.me;
+    if (e.code === 1) {
+      me.status = 'denied';
+      if (this.watchId !== null) { navigator.geolocation.clearWatch(this.watchId); this.watchId = null; }
+      if (AppState.passenger.pickupMode === 'gps') AppState.passenger.pickupMode = 'manual';
+      render();
+    } else if (me.status !== 'ok') me.status = 'error';
+    this.paint();
+  },
+  onFix(pos) {
+    const me = AppState.me, c = pos.coords, first = me.status !== 'ok';
+    me.lat = c.latitude; me.lng = c.longitude; me.acc = c.accuracy; me.ts = Date.now(); me.status = 'ok';
+    MapView.updateMe();
+    const P = AppState.passenger, t = AppState.activeTrip;
+    if (Live.on || !(t && t.isRealDriver)) AppState.driverPos = { lat: me.lat, lng: me.lng };
+    if (Live.on && t && t.isRealDriver) { t.driverPos = { ...AppState.driverPos }; Live.tickProgress(); }
+    let redraw = false;
+    if (P.pickupMode === 'gps' && !t) {
+      const moved = Geo.km(P.pickup, me) * 1000;
+      if (first || moved > 40) {
+        P.pickup = { lat: me.lat, lng: me.lng, address: first ? 'Ubicando tu dirección…' : P.pickup.address };
+        P.offeredFare = Fare.suggest(); Passenger.refreshPickupAddress(); redraw = true;
+      }
+    }
+    if (first) { if (!Live.on) MapView.relocateAmbient(me); redraw = true; }
+    if (redraw) render({ fit: !AppState.ui.pick });
+    this.paint();
+  },
+  paint() {
+    document.querySelectorAll('.js-gps').forEach(el => { el.innerHTML = GPS.chip(); });
+  },
+  chip() {
+    const me = AppState.me;
+    if (me.status === 'ok') return `<span class="text-emerald-400"><i class="fa-solid fa-satellite-dish mr-1"></i>GPS activo · ±${Math.round(me.acc)} m</span>`;
+    if (me.status === 'asking') return `<span class="text-amber-400"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i>Buscando señal GPS…</span>`;
+    if (me.status === 'denied') return `<span class="text-rose-400"><i class="fa-solid fa-location-slash mr-1"></i>Ubicación bloqueada</span>`;
+    if (me.status === 'unavailable') return `<span class="text-rose-400">Este dispositivo no tiene GPS</span>`;
+    return `<span class="text-zinc-400"><i class="fa-solid fa-location-dot mr-1"></i>GPS apagado</span>`;
+  }
+};
+
+/* =====================================================================
+   TOASTS
+   ===================================================================== */
+function toast(msg, type = 'ok') {
+  Sound.play(type === 'danger' ? 'error' : type === 'warn' ? 'warn' : type === 'info' ? 'info' : 'ok');
+  const icons = { ok: 'fa-circle-check', warn: 'fa-triangle-exclamation', danger: 'fa-circle-exclamation', info: 'fa-circle-info' };
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = `<i class="fa-solid ${icons[type] || icons.ok}"></i><span>${esc(msg)}</span>`;
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 450); }, 3600);
+}
+
+function makeQR(sel, text, size) {
+  const el = $(sel); if (!el) return;
+  el.innerHTML = '';
+  try { new QRCode(el, { text, width: size, height: size, colorDark: '#09090b', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M }); }
+  catch (e) { el.innerHTML = `<img alt="Código QR" width="${size}" height="${size}" src="https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}">`; }
+}
+
+/* =====================================================================
+   MAPA
+   ===================================================================== */
+const MapView = {
+  map: null, dyn: null, amb: null, ambM: [], mover: null, leg: null, meLayer: null,
+
+  icons: {
+    origin: () => L.divIcon({ className: '', html: '<div class="mk-origin"><span class="halo"></span><span class="halo h2"></span><span class="dot"></span></div>', iconSize: [44, 44], iconAnchor: [22, 22] }),
+    drop: () => L.divIcon({ className: '', html: `<div class="mk-drop">${pinSvg('#fda4af', '#9f1239')}</div><div class="mk-drop-shadow"></div>`, iconSize: [36, 48], iconAnchor: [18, 46] }),
+    driver: type => L.divIcon({ className: '', html: `<div class="mk-driver"><span class="orbit"></span><div class="card">${vIcon(type, 22)}</div></div>`, iconSize: [52, 52], iconAnchor: [26, 26] }),
+    amb: type => L.divIcon({ className: '', html: `<div class="mk-amb">${vIcon(type, 16)}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] }),
+    me: () => L.divIcon({ className: '', html: '<div class="mk-me"></div>', iconSize: [20, 20], iconAnchor: [10, 10] })
+  },
+
+  init() {
+    this.map = L.map('map', { zoomControl: false, attributionControl: true }).setView([2.4522, -76.8118], 16);
+    if (window.MapBase) MapBase.add(this.map, CONFIG);
+    else { L.tileLayer(CONFIG.tileUrl.replace('{key}', CONFIG.tileKey), { maxZoom: 19, detectRetina: true, attribution: CONFIG.tileAttribution }).addTo(this.map); if (CONFIG.darkTiles) $('#map').classList.add('dark-tiles'); }
+    this.map.attributionControl.setPrefix(false);
+    this.dyn = L.layerGroup().addTo(this.map);
+    this.meLayer = L.layerGroup().addTo(this.map);
+    this.amb = L.layerGroup();
+    if (!Live.on) this.relocateAmbient(AppState.passenger.pickup);
+    setInterval(() => this.ambM.forEach(m => { const ll = m.getLatLng(); m.setLatLng([ll.lat + rand(-0.0004, 0.0004), ll.lng + rand(-0.0004, 0.0004)]); }), 2500);
+    this.map.on('moveend', () => Pick.onMove());
+  },
+
+  relocateAmbient(c) {
+    this.amb.clearLayers(); this.ambM = [];
+    for (let i = 0; i < 5; i++) {
+      const m = L.marker([c.lat + rand(-0.006, 0.006), c.lng + rand(-0.006, 0.006)], { icon: this.icons.amb(i % 2 ? 'moto' : 'tuctuc'), interactive: false });
+      m.addTo(this.amb); this.ambM.push(m);
+    }
+  },
+
+  updateMe() {
+    const me = AppState.me; if (!this.map || me.status !== 'ok') return;
+    this.meLayer.clearLayers();
+    L.circle([me.lat, me.lng], { radius: Math.max(me.acc || 20, 10), color: '#38bdf8', weight: 1, opacity: 0.5, fillColor: '#38bdf8', fillOpacity: 0.08, interactive: false }).addTo(this.meLayer);
+    const near = Geo.km(me, AppState.passenger.pickup) * 1000 < 25;
+    if (AppState.currentRole === 'passenger' && !near) L.marker([me.lat, me.lng], { icon: this.icons.me(), interactive: false }).bindTooltip('Tú', { permanent: true, direction: 'top', offset: [0, -10], className: 'tt' }).addTo(this.meLayer);
+  },
+
+  moverInfo() {
+    const t = AppState.activeTrip, role = AppState.currentRole;
+    if (role === 'passenger' && t && t.isRealPassenger && ['accepted', 'arrived', 'in_progress'].includes(t.status) && t.driverPos) return { pos: t.driverPos, type: t.driver.vehicle };
+    if (role === 'driver') return { pos: AppState.driverPos, type: AppState.driver.vehicleType };
+    return null;
+  },
+
+  moveMover() {
+    const mi = this.moverInfo(); if (!mi) return;
+    if (this.mover) this.mover.setLatLng([mi.pos.lat, mi.pos.lng]);
+    const t = AppState.activeTrip;
+    if (this.leg && t) this.leg.setLatLngs([[mi.pos.lat, mi.pos.lng], [t.pickup.lat, t.pickup.lng]]);
+  },
+
+  tip(marker, text, dir = 'top', off = [0, -22]) { return marker.bindTooltip(esc(text), { permanent: true, direction: dir, offset: off, className: 'tt' }); },
+
+  sync(fit) {
+    if (!this.map) return;
+    const role = AppState.currentRole, t = AppState.activeTrip, p = AppState.passenger, d = AppState.driver, pk = AppState.ui.pick;
+    this.dyn.clearLayers(); this.mover = null; this.leg = null;
+    const pinMode = pk && pk.mode === 'pin' && !t;
+
+    let a = null, b = null;
+    if (!pinMode) {
+      if (role === 'passenger') { if (t && t.isRealPassenger) { a = t.pickup; b = t.dropoff; } else { a = p.pickup; b = p.dropoff; } }
+      else if (t && t.isRealDriver) { a = t.pickup; b = t.dropoff; }
+      else if (d.activeRequest) { a = d.activeRequest.pickup; b = d.activeRequest.dropoff; }
+    }
+    const pts = [];
+    if (a && b) {
+      const line = [[a.lat, a.lng], [b.lat, b.lng]];
+      L.polyline(line, { color: '#10b981', weight: 12, opacity: 0.12, lineCap: 'round' }).addTo(this.dyn);
+      L.polyline(line, { color: '#34d399', weight: 3, opacity: 0.95, dashArray: '2 9', lineCap: 'round' }).addTo(this.dyn);
+      const o = L.marker([a.lat, a.lng], { icon: this.icons.origin(), interactive: false }).addTo(this.dyn);
+      this.tip(o, role === 'driver' ? (t && t.isRealDriver ? t.passengerName : (d.activeRequest ? d.activeRequest.passengerName : 'Pasajero')) : 'Recogida', 'top', [0, -14]);
+      const dr = L.marker([b.lat, b.lng], { icon: this.icons.drop(), interactive: false, zIndexOffset: 500 }).addTo(this.dyn);
+      this.tip(dr, 'Destino', 'top', [0, -44]);
+      pts.push(a, b);
+    }
+    const mi = this.moverInfo();
+    if (mi) {
+      const mk = L.marker([mi.pos.lat, mi.pos.lng], { icon: this.icons.driver(mi.type), interactive: false, zIndexOffset: 1000 }).addTo(this.dyn);
+      this.tip(mk, role === 'driver' ? 'Tú' : 'Conductor', 'top', [0, -26]);
+      this.mover = mk; pts.push(mi.pos);
+      if (t && t.status === 'accepted' && a) {
+        this.leg = L.polyline([[mi.pos.lat, mi.pos.lng], [a.lat, a.lng]], { color: '#06b6d4', weight: 3, opacity: 0.8, dashArray: '6 8' }).addTo(this.dyn);
+      }
+    }
+    const showAmb = role === 'passenger' && !pinMode && (!t || !t.isRealPassenger || t.status === 'searching');
+    if (showAmb) { if (!this.map.hasLayer(this.amb)) this.amb.addTo(this.map); }
+    else if (this.map.hasLayer(this.amb)) this.map.removeLayer(this.amb);
+    this.updateMe();
+    if (fit) this.fit(pts);
+  },
+
+  fit(pts) {
+    if (!pts.length) { const c = AppState.me.status === 'ok' ? AppState.me : AppState.passenger.pickup; pts = [c]; }
+    const sh = $('.sheet:not(.hidden-sheet)');
+    const h = sh ? (AppState.ui.collapsed ? 92 : Math.min(sh.offsetHeight, window.innerHeight * 0.82)) : 200;
+    if (pts.length === 1) { this.map.setView([pts[0].lat, pts[0].lng], 16, { animate: true }); return; }
+    this.map.fitBounds(L.latLngBounds(pts.map(x => [x.lat, x.lng])), { paddingTopLeft: [40, 110], paddingBottomRight: [40, h + 30], maxZoom: 17, animate: true });
+  },
+
+  locate() {
+    const me = AppState.me;
+    if (me.status === 'ok') this.map.setView([me.lat, me.lng], 17, { animate: true });
+    else { GPS.start(); toast(me.status === 'denied' ? 'Activa el permiso de ubicación en los ajustes del navegador.' : 'Buscando tu ubicación…', 'info'); }
+  }
+};
+
+/* =====================================================================
+   PLANTILLAS
+   ===================================================================== */
+const Tpl = {
+  offers() {
+    const offers = AppState.offers;
+    const skel = `<div class="glass-in rounded-2xl p-3 flex items-center gap-3"><div class="avatar shimmer border-0"></div><div class="flex-1 space-y-2"><div class="h-3 w-2/3 rounded shimmer"></div><div class="h-3 w-1/2 rounded shimmer"></div></div><div class="h-8 w-16 rounded-xl shimmer"></div></div>`;
+    let html = offers.map(o => {
+      const diff = o.fare - AppState.activeTrip.fare;
+      return `<div class="glass-in rounded-2xl p-3 flex items-center gap-3">
+        <div class="avatar">${esc(initials(o.name))}</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm truncate">${esc(o.name)}</p>
+          <p class="text-[11px] text-zinc-400 flex items-center gap-1.5"><span class="text-emerald-400">${vIcon(o.vehicle, 14)}</span>${esc(o.plate)}<span>·</span><i class="fa-solid fa-star text-amber-400 text-[10px]"></i>${o.rating}<span>·</span>${o.eta} min</p>
+        </div>
+        <div class="text-right">
+          <p class="font-extrabold text-lg leading-none tabular-nums">${fmt(o.fare)}</p>
+          ${diff > 0 ? `<p class="text-[10px] text-amber-400 font-semibold">+${fmt(diff)} sobre tu oferta</p>` : `<p class="text-[10px] text-emerald-400 font-semibold">Tu precio</p>`}
+          <button class="mini-cta tap" data-act="acceptOffer" data-id="${o.id}">Aceptar</button>
+        </div></div>`;
+    }).join('');
+    if (offers.length < 3) html += skel;
+    return html;
+  },
+
+  results() {
+    const pk = AppState.ui.pick; if (!pk) return '';
+    const items = Pick.list(); pk.items = items;
+    let html = '', g = null;
+    items.forEach((it, i) => {
+      if (it.group !== g) { g = it.group; html += `<p class="text-[11px] text-zinc-500 font-semibold mt-3 mb-1">${g}</p>`; }
+      html += `<button class="w-full text-left flex items-center gap-3 py-2.5 border-b border-white/5 tap" data-act="pickItem" data-i="${i}">
+        <span class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-zinc-300 shrink-0"><i class="fa-solid ${it.icon}"></i></span>
+        <span class="min-w-0"><span class="block text-sm font-semibold truncate">${esc(it.name)}</span>${it.sub ? `<span class="block text-[11px] text-zinc-500 truncate">${esc(it.sub)}</span>` : ''}</span></button>`;
+    });
+    if (pk.loading) html += `<div class="space-y-2 mt-3"><div class="h-10 rounded-xl shimmer"></div><div class="h-10 rounded-xl shimmer"></div></div>`;
+    else if (pk.error) html += `<p class="text-xs text-amber-400 mt-3">No pudimos buscar en línea. Revisa tu conexión o fija el punto en el mapa.</p>`;
+    else if (!items.length) html += `<p class="text-xs text-zinc-400 mt-3">Sin resultados. Prueba con otro nombre o fija el punto en el mapa.</p>`;
+    return html;
+  },
+
+  passenger: {
+    idle() {
+      const p = AppState.passenger, sug = Fare.suggest(), low = p.offeredFare < sug * 0.8;
+      return `
+      <div class="mb-3">
+        <h2 class="text-xl font-extrabold tracking-tight">Hola${AppState.account ? ', ' + esc(AppState.account.name.split(' ')[0]) : ''}. ¿A dónde vas?</h2>
+        <p class="text-xs text-zinc-400">Tú propones el precio y el conductor decide.</p>
+      </div>
+      <div class="glass-in rounded-2xl p-2 mb-1">
+        <button class="w-full text-left flex items-center gap-3 p-2 rounded-xl tap" data-act="openPick" data-f="pickup">
+          <span class="dot-em"></span>
+          <span class="min-w-0 flex-1"><span class="block text-[11px] text-zinc-400">Recogida ${p.pickupMode === 'gps' ? '· por GPS' : '· manual'}</span><span class="block text-sm font-semibold truncate">${esc(p.pickup.address)}</span></span>
+          <i class="fa-solid fa-pen text-zinc-500 text-xs"></i>
+        </button>
+        <div class="ml-[15px] h-2 border-l border-dashed border-zinc-600"></div>
+        <button class="w-full text-left flex items-center gap-3 p-2 rounded-xl tap" data-act="openPick" data-f="dropoff">
+          <i class="fa-solid fa-location-dot text-rose-500 text-[15px] w-3"></i>
+          <span class="min-w-0 flex-1"><span class="block text-[11px] text-zinc-400">Destino</span><span class="block text-sm font-semibold truncate">${esc(p.dropoff.address)}</span></span>
+          <i class="fa-solid fa-pen text-zinc-500 text-xs"></i>
+        </button>
+      </div>
+      <div class="flex items-center justify-between text-[11px] mb-2 px-1">
+        <span class="js-gps">${GPS.chip()}</span>
+        <button class="text-emerald-300 font-bold tap" data-act="pickGps">Usar mi ubicación</button>
+      </div>
+      <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-1">
+        ${PLACES.map((pl, i) => `<button class="chip tap ${p.dropoff.address === pl.name ? 'on' : ''}" data-act="pickPlace" data-i="${i}">${pl.short}</button>`).join('')}
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        ${['moto', 'tuctuc'].map(v => `
+          <button class="veh tap ${p.selectedVehicle === v ? 'on' : ''}" data-act="setVehicle" data-v="${v}">
+            <div class="flex items-center justify-between mb-1"><span class="text-emerald-400">${vIcon(v, 28)}</span><span class="text-[11px] font-bold text-zinc-300">${fmt(Fare.suggest(v))}</span></div>
+            <p class="font-bold text-sm">${vehLabel(v)}</p>
+            <p class="text-[11px] text-zinc-400">${v === 'moto' ? '1 pasajero · rápida' : 'Hasta 3 pasajeros · cómodo'}</p>
+          </button>`).join('')}
+      </div>
+      <div class="glass-in rounded-2xl p-2 mb-3 flex items-center justify-between">
+        <button class="stepbtn tap" data-act="fareDown" aria-label="Bajar oferta">−</button>
+        <div class="text-center">
+          <p class="text-[11px] text-zinc-400">Tu oferta</p>
+          <p class="text-3xl font-extrabold tabular-nums leading-tight">${fmt(p.offeredFare)}</p>
+          <p class="text-[11px] font-semibold ${low ? 'text-rose-400' : 'text-emerald-400'}">${low ? 'Oferta baja: puede tardar más' : 'Sugerida ' + fmt(sug)}</p>
+        </div>
+        <button class="stepbtn tap" data-act="fareUp" aria-label="Subir oferta">+</button>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <button class="pay tap ${p.paymentMethod === 'cash' ? 'on-cash' : ''}" data-act="setPay" data-m="cash"><i class="fa-solid fa-money-bill-wave"></i>Efectivo</button>
+        <button class="pay tap ${p.paymentMethod === 'nequi' ? 'on-nequi' : ''}" data-act="setPay" data-m="nequi"><i class="fa-solid fa-mobile-screen-button"></i>Nequi</button>
+      </div>
+      <input id="trip-note" class="inp mb-3" maxlength="80" placeholder="Nota para el conductor (opcional)" value="${esc(p.note)}">
+      <button class="cta tap" data-act="request">Buscar conductor por ${fmt(p.offeredFare)}</button>`;
+    },
+
+    'pick-search'() {
+      const pk = AppState.ui.pick, isP = pk.field === 'pickup';
+      return `
+      <div class="flex items-center gap-3 mb-3">
+        <button class="w-10 h-10 rounded-full bg-white/5 tap" data-act="pickClose" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></button>
+        <h2 class="text-lg font-extrabold tracking-tight">${isP ? '¿Dónde te recogemos?' : '¿A dónde vas?'}</h2>
+      </div>
+      <div class="relative mb-3">
+        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"></i>
+        <input id="pick-q" class="inp !pl-11" placeholder="Calle, barrio o lugar" value="${esc(pk.q)}" autocomplete="off" inputmode="search">
+      </div>
+      <div class="grid ${isP ? 'grid-cols-2' : 'grid-cols-1'} gap-2 mb-1">
+        ${isP ? `<button class="btn-ghost tap" data-act="pickGps"><i class="fa-solid fa-crosshairs mr-1.5 text-emerald-400"></i>Mi ubicación</button>` : ''}
+        <button class="btn-ghost tap" data-act="pickMap"><i class="fa-solid fa-map-pin mr-1.5 text-rose-400"></i>Fijar en el mapa</button>
+      </div>
+      <div id="pick-results">${Tpl.results()}</div>`;
+    },
+
+    'pick-pin'() {
+      const pk = AppState.ui.pick, isP = pk.field === 'pickup';
+      return `
+      <div class="flex items-center gap-3 mb-2">
+        <button class="w-10 h-10 rounded-full bg-white/5 tap" data-act="pinBack" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></button>
+        <div><h2 class="text-lg font-extrabold tracking-tight">Fija ${isP ? 'la recogida' : 'el destino'}</h2><p class="text-xs text-zinc-400">Mueve el mapa hasta que el pin quede en el punto exacto.</p></div>
+      </div>
+      <div class="glass-in rounded-2xl p-3 my-3 flex items-center gap-3">
+        <i class="fa-solid ${isP ? 'fa-circle-dot text-emerald-400' : 'fa-location-dot text-rose-500'}"></i>
+        <p id="pin-addr" class="text-sm font-semibold">${esc(pk.tmp && pk.tmp.address ? pk.tmp.address : 'Ubicando…')}</p>
+      </div>
+      <button class="cta tap" data-act="pinConfirm">Confirmar ${isP ? 'recogida' : 'destino'}</button>`;
+    },
+
+    busy() {
+      return `<div class="text-center py-6">
+        <div class="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 border border-emerald-500/40 flex items-center justify-center text-emerald-300 mb-3">${Icons.tuctuc(26)}</div>
+        <p class="font-extrabold text-lg">Estás atendiendo un viaje</p>
+        <p class="text-xs text-zinc-400 mt-1 mb-4">Termina la carrera en modo conductor para pedir otra.</p>
+        <button class="cta tap" data-act="setRole" data-role="driver">Ir a modo conductor</button></div>`;
+    },
+
+    searching() {
+      const t = AppState.activeTrip;
+      return `
+      <div class="text-center">
+        <div class="radar"><div class="grid"></div><span class="ring"></span><span class="ring"></span><span class="ring"></span><span class="ring"></span><div class="sweep"></div><div class="core">${vIcon(t.vehicle, 22)}</div></div>
+        <h2 class="text-xl font-extrabold tracking-tight">Buscando conductores</h2>
+        <p class="text-xs text-zinc-400">Ofreciste <b id="search-fare" class="text-zinc-100">${fmt(t.fare)}</b> · ${vehLabel(t.vehicle)} · ${payLabel(t.payment)}</p>
+        <p class="text-[11px] mt-1 js-gps">${GPS.chip()}</p>
+        ${Live.on ? `<p class="text-[11px] mt-1 text-zinc-400">Conductores conectados cerca: <b class="js-ndrv text-zinc-200">${Live.near}</b></p>` : ''}
+      </div>
+      <div id="offers-list" class="space-y-2 mt-4">${Tpl.offers()}</div>
+      <div class="grid grid-cols-2 gap-2 mt-3">
+        <button class="btn-ghost tap" data-act="raise"><i class="fa-solid fa-arrow-up mr-1"></i>Subir ${fmt(500)}</button>
+        <button class="btn-danger tap" data-act="cancel">Cancelar</button>
+      </div>`;
+    },
+
+    ride() {
+      const t = AppState.activeTrip, dr = t.driver;
+      const map = { accepted: { pill: 'em', label: 'Conductor en camino' }, arrived: { pill: 'cy', label: 'Conductor en el punto' }, in_progress: { pill: 'em', label: 'Viaje en curso' } };
+      const m = map[t.status];
+      const remain = Math.max(0, Math.ceil(Trip.etaTotal * (1 - Trip.k)));
+      const headline = t.status === 'accepted' ? `Llega en <span class="js-eta">${remain}</span> min`
+        : t.status === 'arrived' ? 'Tu conductor llegó' : `Llegas en <span class="js-eta">${remain}</span> min`;
+      const payNote = t.payment === 'nequi'
+        ? `<i class="fa-solid fa-mobile-screen-button text-cyan-400"></i><span>Pagas por Nequi al <b class="text-cyan-300">${fmtPhone(dr.nequi || dr.phone)}</b></span>`
+        : `<i class="fa-solid fa-money-bill-wave text-emerald-400"></i><span>Ten <b class="text-emerald-300">${fmt(t.fare)}</b> en efectivo para el conductor</span>`;
+      const pin = t.status !== 'in_progress' ? `
+        <div class="rounded-2xl p-3 mb-3 border border-cyan-500/30 bg-cyan-500/[0.06] flex items-center justify-between">
+          <div><p class="text-[11px] text-cyan-300 font-bold">PIN de seguridad</p><p class="text-[11px] text-zinc-400">Díselo al conductor al subirte.</p></div>
+          <p class="text-3xl font-extrabold tracking-[.35em] tabular-nums pl-2">${t.pin}</p>
+        </div>` : '';
+      return `
+      <div class="flex items-center justify-between mb-3">
+        <span class="status-pill ${m.pill}"><i class="fa-solid fa-circle text-[6px]"></i>${m.label}</span>
+        <span class="text-xs text-zinc-400 font-semibold">${fmt(t.fare)} · ${payLabel(t.payment)}</span>
+      </div>
+      <p class="text-3xl font-extrabold tracking-tight mb-1">${headline}</p>
+      <p class="text-xs text-zinc-400 mb-2">El conductor está a <b class="js-dist text-zinc-200">${t.driverPos ? Geo.km(t.driverPos, t.status === 'in_progress' ? t.dropoff : t.pickup).toFixed(1) : '–'} km</b> ${t.status === 'in_progress' ? 'del destino' : 'de ti'}</p>
+      <div class="h-1.5 rounded-full bg-zinc-800 overflow-hidden mb-4"><div class="js-bar h-full rounded-full bg-emerald-500" style="width:${t.status === 'arrived' ? 100 : Math.round(Trip.k * 100)}%; box-shadow:0 0 12px #10b981"></div></div>
+      ${pin}
+      <div class="glass-in rounded-2xl p-3 flex items-center gap-3 mb-3">
+        <div class="avatar">${esc(initials(dr.name))}</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-bold text-sm truncate">${esc(dr.name)}</p>
+          <p class="text-[11px] text-zinc-400 flex items-center gap-1.5"><span class="text-emerald-400">${vIcon(dr.vehicle, 14)}</span>${vehLabel(dr.vehicle)} · ${esc(dr.plate)}<span>·</span><i class="fa-solid fa-star text-amber-400 text-[10px]"></i>${dr.rating}</p>
+        </div>
+        <a href="tel:${esc(dr.phone)}" class="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 flex items-center justify-center tap" aria-label="Llamar al conductor"><i class="fa-solid fa-phone"></i></a>
+      </div>
+      <div class="glass-in rounded-2xl p-3 text-xs text-zinc-300 space-y-2 mb-3">
+        <div class="flex items-center gap-2"><span class="dot-em"></span><span class="truncate">${esc(shortAddr(t.pickup.address))}</span></div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-location-dot text-rose-500 w-3"></i><span class="truncate">${esc(shortAddr(t.dropoff.address))}</span></div>
+      </div>
+      <div class="flex items-center gap-2 text-xs text-zinc-300 mb-3">${payNote}</div>
+      <div class="grid grid-cols-2 gap-2 mb-2">
+        <button class="btn-ghost tap" data-act="shareTrip"><i class="fa-solid fa-share-nodes mr-1.5 text-emerald-400"></i>Compartir viaje</button>
+        <button class="btn-danger tap" data-act="sos"><i class="fa-solid fa-shield-heart mr-1.5"></i>Emergencia</button>
+      </div>
+      ${t.status !== 'in_progress' ? `<button class="btn-danger tap w-full" data-act="cancel">Cancelar viaje</button>` : ''}`;
+    },
+
+    completed() {
+      const t = AppState.activeTrip, s = t.rating || 0;
+      const payNote = t.payment === 'nequi' ? `Paga por Nequi al <b class="text-cyan-300">${fmtPhone(t.driver.nequi || t.driver.phone)}</b>` : `Paga <b class="text-emerald-300">${fmt(t.fare)}</b> en efectivo`;
+      return `
+      <div class="text-center py-2">
+        <div class="check-pop w-16 h-16 mx-auto rounded-full bg-emerald-500/15 border border-emerald-500/50 flex items-center justify-center text-emerald-300 text-2xl mb-3 glow-em"><i class="fa-solid fa-check"></i></div>
+        <h2 class="text-xl font-extrabold tracking-tight">Llegaste a tu destino</h2>
+        <p class="text-4xl font-extrabold tabular-nums mt-2">${fmt(t.fare)}</p>
+        <p class="text-xs text-zinc-400 mt-1">${payNote}</p>
+      </div>
+      <div class="glass-in rounded-2xl p-4 mt-4 text-center">
+        <p class="text-xs text-zinc-400 mb-2">¿Cómo estuvo el viaje con ${esc(t.driver.name.split(' ')[0])}?</p>
+        <div class="flex justify-center gap-2">${[1, 2, 3, 4, 5].map(n => `<button class="star ${n <= s ? 'on' : ''}" data-act="rate" data-n="${n}" aria-label="${n} estrellas"><i class="fa-solid fa-star"></i></button>`).join('')}</div>
+      </div>
+      <button class="cta tap mt-4" data-act="dismissPassenger">Finalizar</button>`;
+    }
+  },
+
+  request(r) {
+    const sim = r.source === 'sim';
+    const dist = Geo.road(AppState.driverPos, r.pickup), eta = Geo.etaMin(dist);
+    let actions;
+    if (r.status === 'offered' || r.status === 'negotiating') {
+      actions = `<div class="glass-in rounded-2xl p-3 flex items-center gap-3 mt-3"><div class="h-8 w-8 rounded-full shimmer"></div><p class="text-xs text-zinc-300 font-semibold">${r.status === 'negotiating' ? 'Contraoferta enviada. Esperando respuesta…' : 'Oferta enviada. Esperando al pasajero…'}</p></div>`;
+    } else {
+      actions = `
+        <button class="cta tap mt-3" data-act="reqAccept">Aceptar por ${fmt(r.fare)}</button>
+        <div class="grid grid-cols-[1fr_auto] gap-2 mt-2">
+          <button class="btn-ghost tap" data-act="reqCounter">Contraofertar ${fmt(r.fare + 500)}</button>
+          <button class="btn-danger tap px-5" data-act="reqReject" aria-label="Rechazar"><i class="fa-solid fa-xmark"></i></button>
+        </div>`;
+    }
+    return `
+    <div class="rounded-3xl p-4 border border-emerald-500/40 glow-em bg-emerald-500/[0.05] mb-3">
+      <div class="flex items-center justify-between mb-2">
+        <span class="status-pill em"><i class="fa-solid fa-bolt"></i>Nueva solicitud</span>
+        ${sim && r.status === 'new' ? `<span id="req-count" class="text-xs font-extrabold text-emerald-300 tabular-nums">${Math.max(0, Math.ceil((r.expiresAt - Date.now()) / 1000))}s</span>` : ''}
+      </div>
+      ${sim && r.status === 'new' ? `<div class="h-1 rounded-full bg-zinc-800 overflow-hidden mb-3"><div id="req-bar" class="h-full bg-emerald-500" style="width:${Math.max(0, (r.expiresAt - Date.now()) / 250)}%; transition: width .5s linear"></div></div>` : ''}
+      <div class="flex items-center justify-between">
+        <div><p class="text-[11px] text-zinc-400">${esc(r.passengerName)} ofrece</p><p class="text-3xl font-extrabold tabular-nums leading-tight">${fmt(r.fare)}</p></div>
+        <span class="status-pill ${r.payment === 'nequi' ? 'cy' : 'em'}"><i class="fa-solid ${r.payment === 'nequi' ? 'fa-mobile-screen-button' : 'fa-money-bill-wave'}"></i>${payLabel(r.payment)}</span>
+      </div>
+      <div class="mt-3 space-y-2 text-xs text-zinc-300">
+        <div class="flex items-center gap-2"><span class="dot-em"></span><span class="truncate flex-1">${esc(shortAddr(r.pickup.address))}</span><span class="text-zinc-500 shrink-0">${dist.toFixed(1)} km · ${eta} min</span></div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-location-dot text-rose-500 w-3"></i><span class="truncate flex-1">${esc(shortAddr(r.dropoff.address))}</span><span class="text-zinc-500 shrink-0">${r.distKm.toFixed(1)} km</span></div>
+      </div>
+      ${r.note ? `<p class="text-xs text-zinc-300 glass-in rounded-xl px-3 py-2 mt-3"><i class="fa-regular fa-message mr-1.5 text-zinc-500"></i>${esc(r.note)}</p>` : ''}
+      ${actions}
+    </div>`;
+  },
+
+  driverTrip(t) {
+    const st = t.status;
+    const heads = { accepted: `Ve por ${esc(t.passengerName)}`, arrived: 'Esperando al pasajero', in_progress: `Lleva a ${esc(t.passengerName)}` };
+    const cobro = t.payment === 'nequi'
+      ? `<i class="fa-solid fa-mobile-screen-button text-cyan-400"></i><span>Cobra <b class="text-cyan-300">${fmt(t.fare)}</b> por Nequi a tu número</span>`
+      : `<i class="fa-solid fa-money-bill-wave text-emerald-400"></i><span>Cobra <b class="text-emerald-300">${fmt(t.fare)}</b> en efectivo</span>`;
+    if (st === 'completed') {
+      const d = AppState.driver, s = t.summary || { commission: 0 };
+      return `
+      <div class="rounded-3xl p-4 border border-emerald-500/40 glow-em bg-emerald-500/[0.05] mb-3 text-center">
+        <div class="check-pop w-14 h-14 mx-auto rounded-full bg-emerald-500/15 border border-emerald-500/50 flex items-center justify-center text-emerald-300 text-xl mb-2"><i class="fa-solid fa-check"></i></div>
+        <p class="font-extrabold text-lg">Viaje completado</p>
+        <p class="text-3xl font-extrabold tabular-nums mt-1">${fmt(t.fare)}</p>
+        <div class="glass-in rounded-2xl p-3 mt-3 text-xs space-y-1.5 text-left">
+          <div class="flex justify-between"><span class="text-zinc-400">Comisión descontada</span><b class="text-rose-400">-${fmt(s.commission)}</b></div>
+          <div class="flex justify-between"><span class="text-zinc-400">Saldo de billetera</span><b>${fmt(d.walletBalance)}</b></div>
+          <div class="flex justify-between"><span class="text-zinc-400">Cobro al pasajero</span><b>${payLabel(t.payment)}</b></div>
+        </div>
+        <button class="cta tap mt-3" data-act="dismissDriver">Continuar</button>
+      </div>`;
+    }
+    const target = st === 'in_progress' ? t.dropoff : t.pickup;
+    const action = st === 'accepted' ? `<button class="cta tap" data-act="arrived">Llegué al punto de recogida</button>`
+      : st === 'arrived' ? `<button class="cta tap" data-act="startRide">Iniciar viaje</button>`
+      : `<button class="cta tap" data-act="finishRide">Finalizar viaje</button>`;
+    const pinBox = st === 'arrived' ? `
+      <div class="mb-3">
+        <p class="text-[11px] text-zinc-400 mb-1">Pídele el PIN de 4 dígitos al pasajero</p>
+        <input id="pin-in" class="inp text-center text-2xl tracking-[.5em]" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+        ${!t.isRealPassenger && t.pin ? `<p class="text-[10px] text-zinc-500 mt-1 text-center">Demo: el PIN de este pasajero es ${t.pin}</p>` : ''}
+      </div>` : '';
+    return `
+    <div class="rounded-3xl p-4 border border-emerald-500/40 glow-em bg-emerald-500/[0.05] mb-3">
+      <div class="flex items-center justify-between mb-1">
+        <span class="status-pill em"><i class="fa-solid fa-circle text-[6px]"></i>Carrera activa</span>
+        <span class="text-xs text-zinc-400 font-semibold">${fmt(t.fare)} · ${payLabel(t.payment)}</span>
+      </div>
+      <p class="text-2xl font-extrabold tracking-tight mt-2">${heads[st]}</p>
+      <p class="text-xs text-zinc-400 mt-0.5">${st !== 'arrived' ? `Faltan <span class="js-eta">${Math.max(0, Math.ceil(Trip.etaTotal * (1 - Trip.k)))}</span> min · ` : ''}<b class="js-dist text-zinc-200">${Geo.km(AppState.driverPos, target).toFixed(1)} km</b> ${st === 'in_progress' ? 'al destino' : 'al pasajero'}</p>
+      <div class="h-1.5 rounded-full bg-zinc-800 overflow-hidden my-3"><div class="js-bar h-full rounded-full bg-emerald-500" style="width:${st === 'arrived' ? 100 : Math.round(Trip.k * 100)}%"></div></div>
+      <div class="space-y-2 text-xs text-zinc-300 mb-3">
+        <div class="flex items-center gap-2"><span class="dot-em"></span><span class="truncate">${esc(shortAddr(t.pickup.address))}</span></div>
+        <div class="flex items-center gap-2"><i class="fa-solid fa-location-dot text-rose-500 w-3"></i><span class="truncate">${esc(shortAddr(t.dropoff.address))}</span></div>
+      </div>
+      ${t.note ? `<p class="text-xs text-zinc-300 glass-in rounded-xl px-3 py-2 mb-3"><i class="fa-regular fa-message mr-1.5 text-zinc-500"></i>${esc(t.note)}</p>` : ''}
+      <div class="flex items-center gap-2 text-xs text-zinc-300 mb-3">${cobro}</div>
+      ${t.passengerPhone ? `<a href="tel:${esc(t.passengerPhone)}" class="btn-ghost tap block mb-2"><i class="fa-solid fa-phone mr-1.5 text-emerald-400"></i>Llamar al pasajero</a>` : ''}
+      <a class="btn-ghost tap block mb-3" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${target.lat},${target.lng}"><i class="fa-solid fa-route mr-1.5 text-cyan-400"></i>Abrir navegación en Google Maps</a>
+      ${pinBox}
+      ${action}
+      <button class="btn-danger tap w-full mt-2" data-act="sos"><i class="fa-solid fa-shield-heart mr-1.5"></i>Emergencia</button>
+      ${st !== 'in_progress' ? `<button class="btn-danger tap w-full mt-2" data-act="cancel">Cancelar carrera</button>` : ''}
+    </div>`;
+  },
+
+  driver() {
+    const d = AppState.driver, t = AppState.activeTrip, r = d.activeRequest;
+    const low = !Driver.canOperate(), mine = t && t.isRealDriver, st = Driver.todayStats();
+    const trips = Math.floor(d.walletBalance / d.commissionPerTrip);
+    let main = '';
+    if (mine) main = Tpl.driverTrip(t);
+    else if (!d.isOnline) {
+      main = `<div class="text-center py-4"><div class="w-14 h-14 mx-auto rounded-full bg-zinc-800 flex items-center justify-center mb-2"><i class="fa-solid fa-power-off text-zinc-400 text-xl"></i></div>
+        <p class="font-bold">Estás desconectado</p><p class="text-xs text-zinc-400 mt-1">Conéctate para recibir solicitudes de pasajeros.</p></div>`;
+    } else if (r) main = Tpl.request(r);
+    else {
+      main = `<div class="text-center py-1"><div class="radar sm"><div class="grid"></div><span class="ring"></span><span class="ring"></span><span class="ring"></span><span class="ring"></span><div class="sweep"></div><div class="core">${vIcon(d.vehicleType, 18)}</div></div>
+        <p class="font-bold">Buscando pasajeros cerca</p><p class="text-xs text-zinc-400">Te avisamos apenas llegue una solicitud.</p></div>`;
+    }
+    const toggle = mine ? '' : `<button class="${d.isOnline ? 'btn-danger w-full py-4' : 'cta'} tap ${!d.isOnline && low ? 'off' : ''} mt-2" data-act="toggleOnline">${d.isOnline ? 'Desconectarme' : 'Conectarme'}</button>`;
+    const alertLow = low ? `<div class="rounded-2xl p-3 mt-3 border border-rose-500/40 bg-rose-500/10 glow-rose flex gap-3 items-start"><i class="fa-solid fa-lock text-rose-400 mt-0.5"></i>
+        <div class="text-xs"><p class="font-bold text-rose-300">Saldo insuficiente</p><p class="text-zinc-300 mt-0.5">Necesitas mínimo ${fmt(d.commissionPerTrip)} para recibir carreras. Recarga tu billetera con Nequi.</p></div></div>` : '';
+    const tx = AppState.transactions.slice(0, 3).map(x => `
+      <div class="flex items-center justify-between text-xs py-2 border-t border-white/5 first:border-0">
+        <div class="min-w-0"><p class="font-semibold truncate">${esc(x.desc)}</p><p class="text-[10px] text-zinc-500">${new Date(x.ts).toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}</p></div>
+        <b class="${x.amount > 0 ? 'text-cyan-300' : 'text-rose-400'} tabular-nums">${x.amount > 0 ? '+' : '-'}${fmt(Math.abs(x.amount))}</b></div>`).join('') || `<p class="text-xs text-zinc-500 py-1">Aún no tienes movimientos. Tu primera recarga aparecerá aquí.</p>`;
+    return `
+    <div class="flex items-center gap-3 mb-3">
+      <div class="avatar">${avatarHtml()}</div>
+      <div class="flex-1 min-w-0"><p class="font-extrabold truncate">${esc(d.name)}</p><p class="text-[11px] text-zinc-400 flex items-center gap-1.5"><span class="text-emerald-400">${vIcon(d.vehicleType, 14)}</span>${vehLabel(d.vehicleType)} · ${esc(d.plate)}</p></div>
+      <span class="text-[11px] js-gps text-right">${GPS.chip()}</span>
+    </div>
+    ${main}
+    ${toggle}
+    <div class="glass-in rounded-2xl p-4 mt-3 ${low ? 'border-rose-500/40' : ''}">
+      <div class="flex items-start justify-between">
+        <div><p class="text-[11px] text-zinc-400">Billetera prepago</p>
+          <p class="text-3xl font-extrabold tabular-nums leading-tight ${low ? 'text-rose-400' : ''}">${fmt(d.walletBalance)}</p>
+          <p class="text-[11px] text-zinc-500 mt-0.5">Comisión ${fmt(d.commissionPerTrip)} por carrera · te alcanza para ${trips}</p></div>
+        <span class="w-10 h-10 rounded-xl flex items-center justify-center ${low ? 'bg-rose-500/15 text-rose-400' : 'bg-cyan-500/15 text-cyan-300'}"><i class="fa-solid fa-wallet"></i></span>
+      </div>
+      <button class="btn-nequi tap mt-3" data-act="openRecharge"><i class="fa-solid fa-plus mr-1.5"></i>Recargar con Nequi</button>
+    </div>
+    ${alertLow}
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <div class="glass-in rounded-2xl p-3"><p class="text-[11px] text-zinc-400">Ganado hoy</p><p class="text-lg font-extrabold tabular-nums">${fmt(st.total)}</p></div>
+      <div class="glass-in rounded-2xl p-3"><p class="text-[11px] text-zinc-400">Carreras hoy</p><p class="text-lg font-extrabold tabular-nums">${st.count}</p></div>
+    </div>
+    <div class="glass-in rounded-2xl px-4 py-2 mt-3"><p class="text-[11px] text-zinc-400 pt-2 pb-1 font-semibold">Movimientos de billetera</p>${tx}</div>`;
+  }
+};
+
+/* =====================================================================
+   UI (render)
+   ===================================================================== */
+const UI = {
+  passenger() {
+    const body = $('#pass-body'), t = AppState.activeTrip, pk = AppState.ui.pick;
+    const real = t && t.isRealPassenger;
+    const view = t ? (real ? t.status : 'busy') : (pk ? 'pick-' + pk.mode : 'idle');
+    if (view === 'searching' && body.dataset.view === 'searching') {
+      $('#offers-list').innerHTML = Tpl.offers();
+      const f = $('#search-fare'); if (f) f.textContent = fmt(t.fare);
+      return;
+    }
+    if (view === 'pick-search' && body.dataset.view === 'pick-search') { const r = $('#pick-results'); if (r) r.innerHTML = Tpl.results(); return; }
+    const keep = body.dataset.view === view ? body.scrollTop : 0;
+    body.dataset.view = view;
+    const tpl = ['accepted', 'arrived', 'in_progress'].includes(view) ? Tpl.passenger.ride : Tpl.passenger[view];
+    body.innerHTML = tpl();
+    body.scrollTop = keep;
+  },
+  driver() { const b = $('#drv-body'), k = b.scrollTop; b.innerHTML = Tpl.driver(); b.scrollTop = k; },
+  progress(k) {
+    Trip.k = k;
+    const t = AppState.activeTrip;
+    document.querySelectorAll('.js-bar').forEach(b => { b.style.width = (k * 100) + '%'; });
+    document.querySelectorAll('.js-eta').forEach(e => { e.textContent = Math.max(0, Math.ceil(Trip.etaTotal * (1 - k))); });
+    if (t && t.driverPos) {
+      const target = t.status === 'in_progress' ? t.dropoff : t.pickup;
+      document.querySelectorAll('.js-dist').forEach(e => { e.textContent = Geo.km(t.driverPos, target).toFixed(1) + ' km'; });
+    }
+  },
+  modal() {
+    const m = $('#modal'), panel = $('#modal-panel'), u = AppState.ui, d = AppState.driver;
+    if (!u.recharge) { m.classList.remove('open'); return; }
+    const wasOpen = m.classList.contains('open');
+    m.classList.add('open');
+    let inner = '';
+    if (u.rechargeState === 'select') {
+      inner = `
+        <div class="handle mb-4"></div>
+        <div class="flex items-center justify-between mb-1"><h2 class="text-xl font-extrabold tracking-tight">Recargar billetera</h2>
+          <button class="w-9 h-9 rounded-full bg-white/5 tap" data-act="closeRecharge" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button></div>
+        <p class="text-xs text-zinc-400 mb-4">Elige el monto, paga por Nequi y confirma.</p>
+        <div class="grid grid-cols-4 gap-2 mb-4">${[5000, 10000, 20000, 50000].map(a => `<button class="chip cy tap justify-center ${u.rechargeAmount === a ? 'on' : ''}" data-act="amt" data-a="${a}">${fmt(a)}</button>`).join('')}</div>
+        <div class="glass-in rounded-3xl p-4 text-center glow-cy">
+          <p class="text-[11px] text-cyan-300 font-bold mb-2">Envía a la cuenta Nequi de TamboGo</p>
+          <div id="nq-box" class="mx-auto w-[190px] h-[190px] rounded-2xl bg-white p-3"></div>
+          <p class="text-2xl font-extrabold tracking-wide mt-3 tabular-nums">${fmtPhone(CONFIG.nequiPlataforma)}</p>
+          <button class="text-xs text-cyan-300 font-semibold mt-1 tap" data-act="copyNequi"><i class="fa-regular fa-copy mr-1"></i>Copiar número</button>
+        </div>
+        <div class="text-xs text-zinc-400 mt-3 space-y-1">
+          <p>1. Envía <b class="text-zinc-100">${fmt(u.rechargeAmount)}</b> por Nequi y escribe tu celular <b class="text-zinc-100">${esc(d.phone)}</b> en el mensaje.</p>
+          <p>2. Toca “Ya envié el pago” para acreditar tu saldo.</p>
+          <p class="text-zinc-500">${Live.on ? 'Verificamos tu pago en la cuenta de TamboGo y acreditamos el saldo, normalmente en pocos minutos.' : 'Demo: la confirmación es simulada.'}</p>
+        </div>
+        <button class="cta tap mt-4" data-act="confirmRecharge">Ya envié el pago</button>`;
+    } else if (u.rechargeState === 'verifying') {
+      inner = `<div class="handle mb-4"></div><h2 class="text-xl font-extrabold tracking-tight mb-1">Verificando pago</h2>
+        <p class="text-xs text-zinc-400 mb-5">Estamos confirmando tu transferencia de ${fmt(u.rechargeAmount)}.</p>
+        <div class="space-y-3"><div class="h-16 rounded-2xl shimmer"></div><div class="h-4 w-2/3 rounded shimmer"></div><div class="h-4 w-1/2 rounded shimmer"></div></div>`;
+    } else if (u.rechargeState === 'pending') {
+      inner = `<div class="handle mb-4"></div><div class="text-center py-3"><div class="check-pop w-16 h-16 mx-auto rounded-full bg-cyan-500/15 border border-cyan-500/50 flex items-center justify-center text-cyan-300 text-2xl mb-3 glow-cy"><i class="fa-solid fa-clock"></i></div><h2 class="text-xl font-extrabold tracking-tight">Solicitud recibida</h2><p class="text-sm text-zinc-400 mt-2 max-w-[320px] mx-auto">Estamos verificando tu pago de ${fmt(u.rechargeAmount)}. Cuando lo confirmemos, tu saldo se acredita solo y te avisamos aquí.</p></div><button class="cta tap mt-3" data-act="closeRecharge">Entendido</button>`;
+    } else {
+      inner = `<div class="handle mb-4"></div><div class="text-center py-3">
+          <div class="check-pop w-16 h-16 mx-auto rounded-full bg-cyan-500/15 border border-cyan-500/50 flex items-center justify-center text-cyan-300 text-2xl mb-3 glow-cy"><i class="fa-solid fa-check"></i></div>
+          <h2 class="text-xl font-extrabold tracking-tight">Recarga acreditada</h2><p class="text-xs text-zinc-400 mt-1">Tu nuevo saldo es</p>
+          <p class="text-4xl font-extrabold tabular-nums mt-1">${fmt(d.walletBalance)}</p></div>
+        <button class="cta tap mt-3" data-act="closeRecharge">Listo</button>`;
+    }
+    panel.innerHTML = inner;
+    panel.style.animation = wasOpen ? 'none' : '';
+    if (u.rechargeState === 'select') makeQR('#nq-box', CONFIG.nequiPlataforma, 160);
+  }
+};
+
+function render(opts = {}) {
+  const role = AppState.currentRole, pk = AppState.ui.pick, t = AppState.activeTrip;
+  $('#role-pill').style.transform = role === 'passenger' ? 'translateX(0)' : 'translateX(100%)';
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.toggle('on', b.dataset.role === role));
+  $('#hdr-avatar').innerHTML = avatarHtml();
+  const sp = $('#sheet-passenger'), sd = $('#sheet-driver');
+  sp.classList.toggle('hidden-sheet', role !== 'passenger');
+  sd.classList.toggle('hidden-sheet', role !== 'driver');
+  [sp, sd].forEach(s => s.classList.toggle('collapsed', AppState.ui.collapsed));
+  const pinMode = !!(pk && pk.mode === 'pin' && !t && role === 'passenger');
+  const cp = $('#center-pin');
+  if (cp.hidden === pinMode) { cp.hidden = !pinMode; }
+  if (pinMode) cp.innerHTML = pinSvg(pk.field === 'pickup' ? '#6ee7b7' : '#fda4af', pk.field === 'pickup' ? '#047857' : '#9f1239');
+  if (role === 'passenger') UI.passenger(); else UI.driver();
+  UI.modal();
+  requestAnimationFrame(() => MapView.sync(!!opts.fit));
+  Awake.sync();
+}
+
+/* =====================================================================
+   SELECTOR DE DIRECCIONES (buscador, GPS y pin en el mapa)
+   ===================================================================== */
+const Pick = {
+  t: null, geoT: null,
+  open(field) {
+    if (AppState.activeTrip) return;
+    AppState.ui.pick = { field, mode: 'search', q: '', remote: null, loading: false, error: false, items: [], tmp: null };
+    AppState.ui.collapsed = false; render();
+    setTimeout(() => { const i = $('#pick-q'); if (i) i.focus(); }, 350);
+  },
+  close() { AppState.ui.pick = null; render({ fit: true }); },
+  onInput(v) {
+    const pk = AppState.ui.pick; if (!pk) return;
+    pk.q = v; pk.remote = null; pk.error = false; clearTimeout(this.t);
+    const q = v.trim();
+    if (q.length < 3) { pk.loading = false; this.paint(); return; }
+    pk.loading = true; this.paint();
+    this.t = setTimeout(async () => {
+      const r = await Geocode.search(q);
+      const cur = AppState.ui.pick;
+      if (cur && cur.q.trim() === q) { cur.remote = r || []; cur.error = !r; cur.loading = false; Pick.paint(); }
+    }, 650);
+  },
+  paint() { const el = $('#pick-results'); if (el) el.innerHTML = Tpl.results(); },
+  list() {
+    const pk = AppState.ui.pick, q = norm(pk.q.trim()), items = [];
+    if (!q) {
+      const seen = new Set();
+      AppState.history.forEach(h => {
+        if (pk.field === 'dropoff' && h.toPos && !seen.has(h.to) && seen.size < 3) { seen.add(h.to); items.push({ group: 'Recientes', name: shortAddr(h.to), sub: '', lat: h.toPos.lat, lng: h.toPos.lng, full: h.to, icon: 'fa-clock-rotate-left' }); }
+      });
+    }
+    PLACES.filter(p => !q || norm(p.name).includes(q)).forEach(p => items.push({ group: 'Lugares populares', name: p.short, sub: p.name, lat: p.lat, lng: p.lng, full: p.name, icon: 'fa-location-dot' }));
+    (pk.remote || []).forEach(r => items.push({ group: 'Resultados', name: r.name, sub: r.sub, lat: r.lat, lng: r.lng, full: r.name, icon: 'fa-map-pin' }));
+    return items;
+  },
+  choose(i) { const it = (AppState.ui.pick.items || [])[i]; if (it) this.apply(AppState.ui.pick.field, { lat: it.lat, lng: it.lng, address: it.full }); },
+  apply(field, loc) {
+    const p = AppState.passenger;
+    if (field === 'pickup') { p.pickup = { lat: loc.lat, lng: loc.lng, address: loc.address }; p.pickupMode = 'manual'; }
+    else p.dropoff = { lat: loc.lat, lng: loc.lng, address: loc.address };
+    p.offeredFare = Fare.suggest();
+    AppState.ui.pick = null; render({ fit: true }); Store.save();
+  },
+  useGps() {
+    const me = AppState.me, p = AppState.passenger;
+    if (me.status !== 'ok') { GPS.start(); toast(me.status === 'denied' ? 'La ubicación está bloqueada. Actívala en los ajustes del navegador o escribe la dirección.' : 'Buscando tu ubicación… puedes escribir la dirección mientras tanto.', me.status === 'denied' ? 'danger' : 'info'); return; }
+    p.pickupMode = 'gps'; p.pickup = { lat: me.lat, lng: me.lng, address: 'Ubicando tu dirección…' };
+    p.offeredFare = Fare.suggest(); AppState.ui.pick = null; Passenger.refreshPickupAddress(); render({ fit: true });
+  },
+  pin() {
+    const pk = AppState.ui.pick, p = AppState.passenger;
+    const base = pk.field === 'pickup' ? p.pickup : p.dropoff;
+    pk.mode = 'pin'; pk.tmp = { lat: base.lat, lng: base.lng, address: base.address };
+    AppState.ui.collapsed = false; render();
+    MapView.map.setView([base.lat, base.lng], 17, { animate: true });
+  },
+  onMove() {
+    const pk = AppState.ui.pick; if (!pk || pk.mode !== 'pin') return;
+    const c = MapView.map.getCenter();
+    pk.tmp = { lat: c.lat, lng: c.lng, address: null };
+    const el = $('#pin-addr'); if (el) el.innerHTML = '<span class="text-zinc-500">Ubicando…</span>';
+    clearTimeout(this.geoT);
+    this.geoT = setTimeout(async () => {
+      const addr = await Geocode.reverse(c.lat, c.lng);
+      const cur = AppState.ui.pick;
+      if (cur && cur.mode === 'pin' && cur.tmp && cur.tmp.lat === c.lat) { cur.tmp.address = addr; const e2 = $('#pin-addr'); if (e2) e2.textContent = addr; }
+    }, 450);
+  },
+  confirmPin() {
+    const pk = AppState.ui.pick; if (!pk || !pk.tmp) return;
+    if (!pk.tmp.address) { toast('Espera un momento, estamos ubicando la dirección.', 'info'); return; }
+    this.apply(pk.field, pk.tmp);
+  }
+};
+
+/* =====================================================================
+   VIAJE (máquina de estados compartida)
+   ===================================================================== */
+const Trip = {
+  raf: null, k: 0, etaTotal: 1,
+  setStatus(s) {
+    const t = AppState.activeTrip; if (!t) return;
+    t.status = s;
+    if (s === 'completed') Sound.play('success'); else if (s === 'arrived') Sound.play('arrive');
+    if (t.isRealPassenger) AppState.passenger.tripStatus = s;
+    AppState.ui.collapsed = false; render({ fit: true }); Store.save();
+  },
+  driveTo(target, ms, done, etaMin) {
+    const t = AppState.activeTrip; if (!t) return;
+    cancelAnimationFrame(this.raf);
+    this.etaTotal = etaMin || 1; this.k = 0;
+    const from = { ...t.driverPos }, start = performance.now();
+    const step = now => {
+      if (AppState.activeTrip !== t) return;
+      const k = clamp((now - start) / ms, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      t.driverPos = Geo.lerp(from, target, e);
+      if (t.isRealDriver) AppState.driverPos = { ...t.driverPos };
+      MapView.moveMover(); UI.progress(k);
+      if (k < 1) this.raf = requestAnimationFrame(step); else if (done) done();
+    };
+    this.raf = requestAnimationFrame(step);
+  },
+  startRide() {
+    const t = AppState.activeTrip; if (!t || t.status !== 'arrived') return;
+    Timers.clear('autostart');
+    this.setStatus('in_progress');
+    this.driveTo(t.dropoff, 16000, () => { if (!t.isRealDriver && AppState.activeTrip === t) Trip.complete(); }, Geo.etaMin(t.distKm));
+  },
+  complete() {
+    const t = AppState.activeTrip; if (!t || t.status === 'completed') return;
+    cancelAnimationFrame(this.raf); Timers.clearPrefix('auto');
+    const d = AppState.driver; let commission = 0;
+    if (t.isRealDriver) {
+      commission = d.commissionPerTrip; d.walletBalance = Math.max(0, d.walletBalance - commission);
+      AppState.transactions.unshift({ id: uid(), type: 'commission', amount: -commission, desc: `Comisión · ${shortAddr(t.pickup.address)} a ${shortAddr(t.dropoff.address)}`, ts: Date.now() });
+    }
+    t.summary = { fare: t.fare, commission, payment: t.payment };
+    AppState.history.unshift({ id: t.id, ts: Date.now(), fare: t.fare, payment: t.payment, vehicle: t.vehicle, from: t.pickup.address, to: t.dropoff.address, fromPos: { lat: t.pickup.lat, lng: t.pickup.lng }, toPos: { lat: t.dropoff.lat, lng: t.dropoff.lng }, asDriver: !!t.isRealDriver, asPassenger: !!t.isRealPassenger, commission });
+    if (t.isRealDriver && d.isOnline && d.walletBalance < d.commissionPerTrip) {
+      d.isOnline = false; Driver.stopSim();
+      toast('Saldo agotado: te desconectamos. Recarga para seguir recibiendo carreras.', 'danger');
+    }
+    this.setStatus('completed');
+  },
+  dismiss(who) {
+    const t = AppState.activeTrip; if (!t) return;
+    t.dismissed[who] = true;
+    if (t.dismissed.p && t.dismissed.d) { AppState.activeTrip = null; AppState.passenger.tripStatus = 'idle'; if (Live.on) Live.clearTripWatch(); }
+    AppState.ui.collapsed = false; render({ fit: true }); Store.save();
+  },
+  reset(msg, type) {
+    if (Live.on) Live.clearTripWatch();
+    cancelAnimationFrame(this.raf);
+    Timers.clearPrefix('offer'); Timers.clearPrefix('auto'); Timers.clear('autostart'); Timers.clear('counter');
+    AppState.activeTrip = null; AppState.offers = []; AppState.driver.activeRequest = null;
+    AppState.passenger.tripStatus = 'idle'; this.k = 0;
+    if (msg) toast(msg, type || 'info');
+    render({ fit: true });
+  }
+};
+
+/* =====================================================================
+   PASAJERO
+   ===================================================================== */
+const Passenger = {
+  async refreshPickupAddress() {
+    const p = AppState.passenger, at = { lat: p.pickup.lat, lng: p.pickup.lng };
+    const a = await Geocode.reverse(at.lat, at.lng);
+    if (p.pickupMode === 'gps' && p.pickup.lat === at.lat && p.pickup.lng === at.lng) { p.pickup.address = a; if (!AppState.activeTrip) render(); }
+  },
+  request() {
+    const p = AppState.passenger;
+    if (AppState.activeTrip) { toast('Ya tienes un viaje en curso.', 'warn'); return; }
+    if (p.pickupMode === 'gps' && AppState.me.status !== 'ok' && p.pickup.address.indexOf('Parque') === 0) {
+      toast('Aún no tenemos tu GPS. Activa la ubicación o escribe tu dirección de recogida.', 'warn'); return;
+    }
+    const dist = Geo.road(p.pickup, p.dropoff);
+    if (dist < 0.05) { toast('Elige un destino distinto al punto de recogida.', 'warn'); return; }
+    if (Live.on) return Live.request(dist);
+    const trip = {
+      id: uid(), isRealPassenger: true, isRealDriver: false, passengerName: Account.name(),
+      pickup: { ...p.pickup }, dropoff: { ...p.dropoff }, vehicle: p.selectedVehicle, fare: p.offeredFare, payment: p.paymentMethod,
+      distKm: dist, status: 'searching', driver: null, driverPos: null, note: p.note.trim(), pin: String(Math.floor(1000 + Math.random() * 9000)),
+      dismissed: { p: false, d: true }
+    };
+    AppState.activeTrip = trip; AppState.offers = []; p.tripStatus = 'searching';
+    AppState.ui.collapsed = false; AppState.ui.pick = null;
+    Sim.scheduleOffers(trip); Driver.dispatchRealRequest();
+    render({ fit: true }); Store.save();
+  },
+  raise() {
+    const t = AppState.activeTrip, p = AppState.passenger;
+    if (!t || t.status !== 'searching') return;
+    if (Live.on) return Live.raise();
+    t.fare += 500; p.offeredFare = t.fare;
+    const r = AppState.driver.activeRequest;
+    if (r && r.source === 'real' && r.status === 'new') r.fare = t.fare;
+    toast(`Subiste tu oferta a ${fmt(t.fare)}`, 'ok');
+    Sim.extraOffer(t); render(); Store.save();
+  },
+  acceptOffer(id) {
+    const o = AppState.offers.find(x => x.id === id), t = AppState.activeTrip;
+    if (!o || !t || t.status !== 'searching') return;
+    if (Live.on) return Live.acceptOffer(o);
+    Timers.clearPrefix('offer');
+    t.fare = o.fare;
+    t.driver = { name: o.name, plate: o.plate, vehicle: o.vehicle, rating: o.rating, phone: o.phone, nequi: o.nequi, isReal: !!o.isReal };
+    t.isRealDriver = !!o.isReal; t.dismissed.d = !t.isRealDriver;
+    t.driverPos = { lat: o.lat, lng: o.lng };
+    if (t.isRealDriver) AppState.driverPos = { ...t.driverPos };
+    AppState.offers = []; AppState.driver.activeRequest = null;
+    Trip.setStatus('accepted');
+    Trip.driveTo(t.pickup, 11000, () => {
+      if (AppState.activeTrip !== t || t.status !== 'accepted') return;
+      if (!t.isRealDriver) {
+        Trip.setStatus('arrived');
+        toast(`${t.driver.name.split(' ')[0]} llegó al punto de recogida.`, 'ok');
+        Timers.set('autostart', () => Trip.startRide(), 3500);
+      } else toast('Tu conductor está en el punto de recogida.', 'ok');
+    }, o.eta);
+    toast('Conductor confirmado.', 'ok');
+  },
+  cancel() {
+    const t = AppState.activeTrip;
+    if (!t || !t.isRealPassenger || t.status === 'in_progress' || t.status === 'completed') return;
+    if (Live.on) Live.cancelTrip(t.id);
+    Trip.reset('Cancelaste el viaje.', 'info'); Store.save();
+  },
+  share() {
+    const t = AppState.activeTrip; if (!t || !t.driver) return;
+    const pos = t.driverPos || t.pickup;
+    const text = `Voy en ${vehLabel(t.driver.vehicle).toLowerCase()} con ${t.driver.name}, placa ${t.driver.plate}, hacia ${shortAddr(t.dropoff.address)}. Ubicación del vehículo: https://maps.google.com/?q=${pos.lat},${pos.lng}`;
+    if (navigator.share) navigator.share({ title: 'Mi viaje en TamboGo', text }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('Datos del viaje copiados. Pégalos en WhatsApp.', 'ok'));
+  }
+};
+
+/* =====================================================================
+   SIMULADOR DE CONDUCTORES
+   ===================================================================== */
+const Sim = {
+  makeOffer(trip, drv, fare) {
+    const ang = rand(0, Math.PI * 2), dist = rand(0.004, 0.009);
+    const pos = { lat: trip.pickup.lat + Math.sin(ang) * dist, lng: trip.pickup.lng + Math.cos(ang) * dist };
+    return { id: uid(), name: drv.name, plate: drv.plate, vehicle: drv.vehicle, rating: drv.rating, phone: drv.phone, nequi: drv.phone, eta: Geo.etaMin(Geo.road(pos, trip.pickup)), fare, lat: pos.lat, lng: pos.lng, isReal: false };
+  },
+  scheduleOffers(trip) {
+    if (Live.on) return;
+    const pool = SIM_DRIVERS.filter(d => d.vehicle === trip.vehicle), delays = [1800, 3900, 6400];
+    pool.slice(0, 3).forEach((drv, i) => {
+      Timers.set('offer' + i, () => {
+        const t = AppState.activeTrip;
+        if (!t || t.id !== trip.id || t.status !== 'searching') return;
+        AppState.offers.push(this.makeOffer(t, drv, t.fare + pick([0, 0, 500, 500, 1000]))); Sound.play('offer'); render();
+      }, delays[i]);
+    });
+  },
+  extraOffer(trip) {
+    if (Live.on) return;
+    const drv = pick(SIM_DRIVERS.filter(d => d.vehicle === trip.vehicle));
+    Timers.set('offerX' + uid(), () => {
+      const t = AppState.activeTrip;
+      if (!t || t.id !== trip.id || t.status !== 'searching') return;
+      AppState.offers.push(this.makeOffer(t, drv, t.fare)); render();
+    }, 1500);
+  }
+};
+
+/* =====================================================================
+   CONDUCTOR
+   ===================================================================== */
+const Driver = {
+  canOperate() { return AppState.driver.walletBalance >= AppState.driver.commissionPerTrip; },
+  todayStats() {
+    const s = new Date().setHours(0, 0, 0, 0), rows = AppState.history.filter(h => h.asDriver && h.ts >= s);
+    return { total: rows.reduce((a, h) => a + h.fare, 0), count: rows.length };
+  },
+  toggleOnline() {
+    const d = AppState.driver;
+    if (AppState.activeTrip && AppState.activeTrip.isRealDriver) return;
+    if (!d.isOnline) {
+      if (!Account.driverOk()) { toast('Tu cuenta de conductor aún no está aprobada.', 'warn'); return; }
+      if (!this.canOperate()) { toast('Saldo insuficiente. Recarga tu billetera para conectarte.', 'danger'); return; }
+      GPS.start();
+      if (Live.on && !Live.goOnline()) return;
+      d.isOnline = true; toast('Estás en línea.', 'ok'); this.startSim(); this.dispatchRealRequest();
+    } else { if (Live.on) Live.goOffline(); d.isOnline = false; d.activeRequest = null; this.stopSim(); toast('Te desconectaste.', 'info'); }
+    render({ fit: true }); Store.save();
+  },
+  startSim() { if (Live.on) return; Timers.set('simreq0', () => this.spawnSimRequest(), 3500); Timers.every('simreq', () => this.spawnSimRequest(), 16000); },
+  stopSim() { Timers.clear('simreq0'); Timers.stopEvery('simreq'); },
+  spawnSimRequest() {
+    const d = AppState.driver;
+    if (!d.isOnline || d.activeRequest || AppState.activeTrip) return;
+    let pickup, dropoff;
+    if (AppState.me.status === 'ok') {
+      const c = AppState.driverPos;
+      pickup = { lat: c.lat + rand(-0.005, 0.005), lng: c.lng + rand(-0.005, 0.005), address: 'Punto cercano a ti (demo)' };
+      dropoff = { lat: c.lat + rand(-0.01, 0.01), lng: c.lng + rand(-0.01, 0.01), address: 'Destino de prueba (demo)' };
+    } else {
+      const a = pick(PLACES); let b = pick(PLACES); while (b === a) b = pick(PLACES);
+      pickup = { lat: a.lat + rand(-0.0006, 0.0006), lng: a.lng + rand(-0.0006, 0.0006), address: a.name };
+      dropoff = { lat: b.lat, lng: b.lng, address: b.name };
+    }
+    const fare = Math.max(2000, Fare.suggestFor(d.vehicleType, pickup, dropoff) + pick([-500, 0, 0, 500]));
+    d.activeRequest = { id: uid(), source: 'sim', status: 'new', passengerName: pick(SIM_PASSENGERS), pickup, dropoff, fare, payment: pick(['nequi', 'cash']), vehicle: d.vehicleType, distKm: Geo.road(pickup, dropoff), expiresAt: Date.now() + 25000, note: pick(['', '', 'Estoy en la puerta azul', 'Llevo un paquete pequeño']) };
+    if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+    Sound.beep(); AppState.ui.collapsed = false;
+    if (AppState.currentRole === 'driver') render({ fit: true }); else toast('Llegó una solicitud en modo conductor.', 'info');
+  },
+  dispatchRealRequest() {
+    if (Live.on) return;
+    const d = AppState.driver, t = AppState.activeTrip;
+    if (!d.isOnline || !t || !t.isRealPassenger || t.status !== 'searching' || t.rejectedByDriver || d.activeRequest) return;
+    if (t.vehicle !== d.vehicleType || !this.canOperate()) return;
+    d.activeRequest = { id: t.id, source: 'real', status: 'new', passengerName: t.passengerName, pickup: t.pickup, dropoff: t.dropoff, fare: t.fare, payment: t.payment, vehicle: t.vehicle, distKm: t.distKm, note: t.note };
+  },
+  accept(counter) {
+    const d = AppState.driver, r = d.activeRequest;
+    if (!r || r.status !== 'new') return;
+    if (!this.canOperate()) { toast('Saldo insuficiente. Recarga para aceptar carreras.', 'danger'); return; }
+    if (Live.on) return Live.sendOffer(r, counter);
+    const fare = r.fare + (counter ? 500 : 0);
+    if (r.source === 'real') {
+      const t = AppState.activeTrip;
+      if (!t || t.id !== r.id) { d.activeRequest = null; render(); return; }
+      AppState.offers.push({ id: uid(), name: d.name, plate: d.plate, vehicle: d.vehicleType, rating: 5.0, phone: d.phone, nequi: d.nequiNumber, eta: Geo.etaMin(Geo.road(AppState.driverPos, r.pickup)), fare, lat: AppState.driverPos.lat, lng: AppState.driverPos.lng, isReal: true });
+      r.status = 'offered';
+      toast(counter ? `Contraoferta de ${fmt(fare)} enviada.` : 'Oferta enviada al pasajero. Cambia a modo pasajero para aceptarla.', 'ok');
+      render(); return;
+    }
+    if (counter) {
+      r.status = 'negotiating'; render();
+      Timers.set('counter', () => {
+        if (!d.activeRequest || d.activeRequest.id !== r.id) return;
+        if (Math.random() < 0.7) { toast('El pasajero aceptó tu contraoferta.', 'ok'); this.startSimTrip(r, fare); }
+        else { d.activeRequest = null; toast('El pasajero prefirió otra oferta.', 'warn'); render({ fit: true }); }
+      }, 2000);
+    } else this.startSimTrip(r, fare);
+  },
+  startSimTrip(r, fare) {
+    const d = AppState.driver;
+    const t = { id: r.id, isRealPassenger: false, isRealDriver: true, passengerName: r.passengerName, pickup: r.pickup, dropoff: r.dropoff, vehicle: d.vehicleType, fare, payment: r.payment, distKm: r.distKm, note: r.note || '', pin: String(Math.floor(1000 + Math.random() * 9000)), status: 'accepted', driver: { name: d.name, plate: d.plate, vehicle: d.vehicleType, rating: 5.0, phone: d.phone, nequi: d.nequiNumber, isReal: true }, driverPos: { ...AppState.driverPos }, dismissed: { p: true, d: false } };
+    AppState.activeTrip = t; d.activeRequest = null;
+    Trip.setStatus('accepted');
+    Trip.driveTo(t.pickup, 9000, null, Geo.etaMin(Geo.road(t.driverPos, t.pickup)));
+  },
+  reject() {
+    const d = AppState.driver, r = d.activeRequest; if (!r) return;
+    if (Live.on) Live.rejected.add(r.id);
+    if (r.source === 'real' && AppState.activeTrip) AppState.activeTrip.rejectedByDriver = true;
+    d.activeRequest = null; render({ fit: true });
+  },
+  arrived() { if (Live.on) return Live.driverStep('arrived'); const t = AppState.activeTrip; if (t && t.isRealDriver && t.status === 'accepted') { cancelAnimationFrame(Trip.raf); Trip.setStatus('arrived'); } },
+  start() {
+    const t = AppState.activeTrip; if (!t || !t.isRealDriver || t.status !== 'arrived') return;
+    const v = ($('#pin-in') || {}).value || '';
+    if (Live.on) return Live.driverStep('in_progress', v);
+    if (v !== t.pin) { toast('PIN incorrecto. Pídeselo de nuevo al pasajero.', 'danger'); const i = $('#pin-in'); if (i) { i.classList.add('err'); i.focus(); } return; }
+    Trip.startRide();
+  },
+  finish() { if (Live.on) return Live.finishTrip(); const t = AppState.activeTrip; if (t && t.isRealDriver && t.status === 'in_progress') Trip.complete(); },
+  cancelTrip() {
+    const t = AppState.activeTrip;
+    if (!t || !t.isRealDriver || !['accepted', 'arrived'].includes(t.status)) return;
+    if (Live.on) { Live.driverCancel(); return; }
+    cancelAnimationFrame(Trip.raf); Timers.clear('autostart');
+    if (t.isRealPassenger) {
+      t.driver = null; t.isRealDriver = false; t.dismissed.d = true; t.driverPos = null; t.rejectedByDriver = true; AppState.offers = [];
+      Sim.scheduleOffers(t); Trip.setStatus('searching');
+      toast('Cancelaste. El pasajero vuelve a buscar conductor.', 'info');
+    } else Trip.reset('Cancelaste la carrera.', 'info');
+  }
+};
+
+/* =====================================================================
+   BILLETERA
+   ===================================================================== */
+const Wallet = {
+  open() { AppState.ui.recharge = true; AppState.ui.rechargeState = 'select'; render(); },
+  close() { AppState.ui.recharge = false; render(); },
+  confirm() {
+    if (Live.on) return Live.topup();
+    AppState.ui.rechargeState = 'verifying'; UI.modal();
+    Timers.set('recharge', () => {
+      const d = AppState.driver, a = AppState.ui.rechargeAmount;
+      d.walletBalance += a;
+      AppState.transactions.unshift({ id: uid(), type: 'recharge', amount: a, desc: 'Recarga por Nequi', ts: Date.now() });
+      AppState.ui.rechargeState = 'done'; Store.save(); render();
+      toast(`Recarga de ${fmt(a)} acreditada.`, 'ok');
+    }, 2400);
+  }
+};
+
+/* =====================================================================
+   PANTALLAS: bienvenida, registro, menú, historial, perfil, compartir, ayuda
+   ===================================================================== */
+const Screens = {
+  name: null, form: {}, step: 0, params: {}, tab: 'p',
+
+  show(name, params) {
+    this.name = name; this.params = params || {};
+    const s = $('#screen'); s.hidden = false; s.scrollTop = 0;
+    this.paint();
+  },
+  paint() {
+    const html = Screens.tpl[this.name]();
+    $('#screen-inner').innerHTML = html;
+    if (this.name === 'share') Share.paint();
+  },
+  refresh() { const s = $('#screen'), k = s.scrollTop; this.paint(); s.scrollTop = k; },
+  close() { $('#screen').hidden = true; this.name = null; },
+
+  top(title, back = 'closeScreen') {
+    return `<div class="flex items-center gap-3 mb-5 pt-1"><button class="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 tap" data-act="${back}" aria-label="Volver"><i class="fa-solid fa-arrow-left"></i></button><h1 class="text-xl font-extrabold tracking-tight">${title}</h1></div>`;
+  },
+  F(label, key, o = {}) {
+    return `<label class="block mb-3"><span class="block text-xs font-semibold text-zinc-400 mb-1.5">${label}</span>
+      <input class="inp" data-form="${key}" type="${o.type || 'text'}" ${o.mode ? `inputmode="${o.mode}"` : ''} ${o.max ? `maxlength="${o.max}"` : ''} placeholder="${o.ph || ''}" value="${esc(this.form[key] || '')}" autocomplete="off">
+      ${o.hint ? `<span class="block text-[11px] text-zinc-500 mt-1">${o.hint}</span>` : ''}</label>`;
+  },
+  Check(key, text) {
+    return `<label class="flex items-start gap-3 mb-3 text-sm text-zinc-300"><input type="checkbox" data-form="${key}" ${this.form[key] ? 'checked' : ''} class="mt-0.5 w-5 h-5 accent-emerald-500 shrink-0"><span>${text}</span></label>`;
+  },
+  Seg(key, opts) {
+    return `<div class="grid grid-cols-${opts.length} gap-2 mb-3">${opts.map(o => `<button type="button" class="pay tap ${this.form[key] === o.v ? 'on-cash' : ''}" data-act="formSet" data-k="${key}" data-v="${o.v}">${o.icon || ''}${o.l}</button>`).join('')}</div>`;
+  },
+
+  validate(kind, step) {
+    const f = this.form, phone = /^3\d{9}$/;
+    const bad = (k, msg) => ({ k, msg });
+    if (kind === 'passenger') {
+      if (!f.name || f.name.trim().length < 3) return bad('name', 'Escribe tu nombre completo.');
+      if (!phone.test(f.phone || '')) return bad('phone', 'Tu celular debe tener 10 dígitos y empezar por 3.');
+      if (Live.on) { const em = (f.email || '').trim().toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) return bad('email', 'Escribe un correo electrónico válido.'); if (em !== (f.email2 || '').trim().toLowerCase()) return bad('email2', 'Los dos correos deben ser iguales.'); }
+      if (Live.on && (f.password || '').length < 6) return bad('password', 'La contraseña debe tener mínimo 6 caracteres.');
+      if (!f.terms) return bad('terms', 'Acepta los términos para continuar.');
+    } else if (step === 0) {
+      if (!f.name || f.name.trim().length < 3) return bad('name', 'Escribe tu nombre completo.');
+      if (!phone.test(f.phone || '')) return bad('phone', 'Tu celular debe tener 10 dígitos y empezar por 3.');
+      if (!/^\d{6,10}$/.test(f.cedula || '')) return bad('cedula', 'Escribe tu número de cédula (6 a 10 dígitos).');
+      if (Live.on && !AppState.account) { const em = (f.email || '').trim().toLowerCase(); if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) return bad('email', 'Escribe un correo electrónico válido.'); if (em !== (f.email2 || '').trim().toLowerCase()) return bad('email2', 'Los dos correos deben ser iguales.'); }
+      if (Live.on && !AppState.account && (f.password || '').length < 6) return bad('password', 'La contraseña debe tener mínimo 6 caracteres.');
+    } else if (step === 1) {
+      if (!/^[A-Z]{3}-?[0-9]{2,3}[A-Z]?$/.test(f.plate || '')) return bad('plate', 'Placa no válida. Ejemplo: ABC-12D o TUC-123.');
+      if (!f.brand || f.brand.trim().length < 2) return bad('brand', 'Escribe la marca del vehículo.');
+      if (!f.color || f.color.trim().length < 3) return bad('color', 'Escribe el color del vehículo.');
+      if (!f.license || f.license.trim().length < 5) return bad('license', 'Escribe el número de tu licencia de conducción.');
+      if (!f.soat) return bad('soat', 'Necesitas SOAT vigente para conducir en TamboGo.');
+      if (!f.docs) return bad('docs', 'Confirma que tienes tus documentos al día.');
+    } else {
+      if (!phone.test(f.nequi || '')) return bad('nequi', 'Escribe el número de Nequi (10 dígitos).');
+      if (!f.terms) return bad('terms', 'Acepta los términos para continuar.');
+    }
+    return null;
+  },
+  flagError(e) {
+    toast(e.msg, 'warn');
+    const el = document.querySelector(`[data-form="${e.k}"]`);
+    if (el) { el.classList.add('err'); if (el.focus) el.focus(); }
+  },
+
+  tpl: {
+    splash() {
+      return `<div class="flex flex-col items-center justify-center text-center" style="min-height:80vh">
+        <div class="splash-wrap"><span class="splash-ring"></span><span class="splash-ring"></span><span class="splash-ring"></span><div class="splash-logo">${Logo.icon(120)}</div></div>
+        <h1 class="text-4xl mt-6 fade-up">${Logo.word()}</h1>
+        <p class="text-sm text-zinc-400 mt-2 fade-up">Motos y tuctucs en El Tambo</p></div>`;
+    },
+
+    welcome() {
+      const has = !!AppState.account;
+      return `<div class="flex flex-col" style="min-height:92vh">
+        <div class="flex-1 flex flex-col items-center justify-center text-center pt-6">
+          <span class="logo-glow">${Logo.icon(96)}</span>
+          <h1 class="text-4xl mt-5">${Logo.word()}</h1>
+          <p class="text-[15px] text-zinc-300 font-semibold mt-3 max-w-[300px]">Pide tu moto o tuctuc. Tú pones el precio, el conductor decide.</p>
+          <div class="grid grid-cols-3 gap-2 mt-7 w-full text-[11px] text-zinc-400">
+            <div class="glass-in rounded-2xl p-3"><i class="fa-solid fa-satellite-dish text-emerald-400 text-lg mb-1.5"></i><p>Ubicación por GPS</p></div>
+            <div class="glass-in rounded-2xl p-3"><i class="fa-solid fa-handshake text-emerald-400 text-lg mb-1.5"></i><p>Negocia la tarifa</p></div>
+            <div class="glass-in rounded-2xl p-3"><i class="fa-solid fa-mobile-screen-button text-cyan-400 text-lg mb-1.5"></i><p>Paga con Nequi o efectivo</p></div>
+          </div>
+        </div>
+        <div class="space-y-2.5 pb-2">
+          <button class="cta tap" data-act="wPassenger">Pedir un viaje</button>
+          <button class="btn-ghost tap w-full !py-4 !text-[15px]" data-act="wDriver"><i class="fa-solid fa-id-card mr-2 text-emerald-400"></i>Quiero ser conductor</button>
+          ${has || Live.on ? `<button class="w-full text-sm font-bold text-emerald-300 py-3 tap" data-act="wLogin">Ya tengo cuenta</button>` : ''}
+          <p class="text-[11px] text-zinc-500 text-center pt-1">Servicio local de El Tambo, Cauca</p>
+        </div></div>`;
+    },
+
+    login() {
+      const a = AppState.account;
+      if (!Live.on) return `${Screens.top('Ingresar', 'wBack')}
+        <p class="text-sm text-zinc-400 mb-4">Escribe el celular con el que te registraste${a ? ' (' + esc(a.name.split(' ')[0]) + ')' : ''}.</p>
+        ${Screens.F('Celular', 'phone', { type: 'tel', mode: 'numeric', max: 10, ph: '3001234567' })}
+        <button class="cta tap mt-2" data-act="doLogin">Ingresar</button>`;
+      return `${Screens.top('Ingresar', 'wBack')}
+        <p class="text-sm text-zinc-400 mb-4">Ingresa con tu correo o con tu celular, y tu contraseña.</p>
+        ${Screens.F('Correo o celular', 'login', { type: 'text', mode: 'email', ph: 'tucorreo@gmail.com o 3001234567', hint: 'Puedes usar cualquiera de los dos.' })}
+        ${Screens.F('Contraseña', 'password', { type: 'password', ph: 'Tu contraseña' })}
+        <button class="cta tap mt-2" data-act="doLogin">Ingresar</button>
+        <button class="w-full text-sm font-bold text-emerald-300 py-4 tap" data-act="forgot">¿Olvidaste tu contraseña?</button>`;
+    },
+
+    forgot() {
+      const wa = Live.settings && Live.settings.whatsapp;
+      if (Screens.params.sent) {
+        return `${Screens.top('Recuperar contraseña', 'forgotBack')}
+          <div class="glass-in rounded-3xl p-5 text-center mb-4">
+            <div class="check-pop w-16 h-16 mx-auto rounded-full bg-emerald-500/15 border border-emerald-500/50 flex items-center justify-center text-emerald-300 text-2xl mb-3 glow-em"><i class="fa-solid fa-envelope-circle-check"></i></div>
+            <p class="font-extrabold text-lg">Revisa tu correo</p>
+            <p class="text-sm text-zinc-400 mt-2">Si esa cuenta existe, te enviamos un enlace a su correo para crear una contraseña nueva. Míralo también en la carpeta de Spam o correo no deseado.</p>
+          </div>
+          <button class="cta tap" data-act="forgotBack">Volver a ingresar</button>
+          ${wa ? `<a href="https://wa.me/57${esc(wa)}" target="_blank" rel="noopener" class="btn-ghost tap block mt-3 text-center"><i class="fa-brands fa-whatsapp mr-1.5 text-emerald-400"></i>¿No te llega? Escríbenos</a>` : ''}`;
+      }
+      return `${Screens.top('Recuperar contraseña', 'forgotBack')}
+        <p class="text-sm text-zinc-400 mb-4">Escribe tu correo o tu celular. Te enviaremos al correo de la cuenta un enlace para crear una contraseña nueva.</p>
+        ${Screens.F('Correo o celular', 'login', { type: 'text', mode: 'email', ph: 'tucorreo@gmail.com o 3001234567' })}
+        <button class="cta tap mt-2" data-act="sendReset">Enviarme el enlace</button>`;
+    },
+
+    regPassenger() {
+      const f = Screens.form;
+      return `${Screens.top('Crea tu cuenta de pasajero', 'wBack')}
+        <p class="text-sm text-zinc-400 mb-5">Solo necesitamos tu nombre y celular para que el conductor pueda contactarte.</p>
+        ${Screens.F('Nombre completo', 'name', { ph: 'Ej. Ana María Ruiz' })}
+        ${Screens.F('Celular', 'phone', { type: 'tel', mode: 'numeric', max: 10, ph: '3001234567', hint: 'El conductor podrá llamarte durante el viaje.' })}
+        ${Live.on ? Screens.F('Correo electrónico', 'email', { type: 'email', ph: 'tucorreo@gmail.com', hint: 'Lo usarás para ingresar y para recuperar tu contraseña.' }) + Screens.F('Repite tu correo', 'email2', { type: 'email', ph: 'tucorreo@gmail.com' }) : ''}
+        ${Live.on ? Screens.F('Contraseña', 'password', { type: 'password', ph: 'Mínimo 6 caracteres', hint: 'Junto con tu correo, la usarás para ingresar.' }) : ''}
+        <p class="text-xs font-semibold text-zinc-400 mb-1.5">¿Cómo pagas normalmente?</p>
+        ${Screens.Seg('payment', [{ v: 'cash', l: 'Efectivo', icon: '<i class="fa-solid fa-money-bill-wave"></i>' }, { v: 'nequi', l: 'Nequi', icon: '<i class="fa-solid fa-mobile-screen-button"></i>' }])}
+        ${Screens.Check('terms', 'Acepto los <a href="#" data-act="showTerms" class="text-emerald-300 underline font-bold">términos de uso y el tratamiento de mis datos</a>.')}
+        <button class="cta tap mt-2" data-act="submitPassenger">Crear cuenta</button>`;
+    },
+
+    gps() {
+      return `<div class="flex flex-col items-center text-center justify-center" style="min-height:80vh">
+        <div class="relative w-40 h-40 mb-6"><span class="splash-ring"></span><span class="splash-ring"></span><div class="absolute inset-0 m-auto w-20 h-20 rounded-full bg-emerald-500/15 border border-emerald-500/50 flex items-center justify-center text-emerald-300 text-3xl glow-em"><i class="fa-solid fa-location-crosshairs"></i></div></div>
+        <h1 class="text-2xl font-extrabold tracking-tight">Activa tu ubicación</h1>
+        <p class="text-sm text-zinc-400 mt-2 max-w-[320px]">Usamos el GPS para recogerte donde estás y para que tu conductor te encuentre. También puedes escribir la dirección a mano.</p>
+        <div class="w-full space-y-2.5 mt-8">
+          <button class="cta tap" data-act="gpsAllow">Activar ubicación</button>
+          <button class="btn-ghost tap w-full !py-4" data-act="gpsSkip">Prefiero escribir la dirección</button>
+        </div></div>`;
+    },
+
+    regDriver() {
+      const s = Screens.step, f = Screens.form;
+      const titles = ['Tus datos', 'Tu vehículo', 'Cobros y términos'];
+      const bar = `<div class="step-bar">${[0, 1, 2].map(i => `<i class="${i <= s ? 'on' : ''}"></i>`).join('')}</div>`;
+      let body = '';
+      if (s === 0) body = `
+        <p class="text-sm text-zinc-400 mb-4">Paso 1 de 3. Usa los mismos datos de tu cédula.</p>
+        ${Screens.F('Nombre completo', 'name', { ph: 'Ej. Carlos Mario Ipia' })}
+        ${Screens.F('Celular', 'phone', { type: 'tel', mode: 'numeric', max: 10, ph: '3001234567' })}
+        ${Live.on && !AppState.account ? Screens.F('Correo electrónico', 'email', { type: 'email', ph: 'tucorreo@gmail.com', hint: 'Lo usarás para ingresar y para recuperar tu contraseña.' }) + Screens.F('Repite tu correo', 'email2', { type: 'email', ph: 'tucorreo@gmail.com' }) : ''}
+        ${Live.on && !AppState.account ? Screens.F('Contraseña', 'password', { type: 'password', ph: 'Mínimo 6 caracteres' }) : ''}
+        ${Screens.F('Número de cédula', 'cedula', { mode: 'numeric', max: 10, ph: '1061000000' })}`;
+      else if (s === 1) body = `
+        <p class="text-sm text-zinc-400 mb-4">Paso 2 de 3. Solo se aceptan vehículos propios o autorizados.</p>
+        <p class="text-xs font-semibold text-zinc-400 mb-1.5">Tipo de vehículo</p>
+        ${Screens.Seg('vehicleType', [{ v: 'moto', l: 'Moto', icon: Icons.moto(20) }, { v: 'tuctuc', l: 'Tuctuc', icon: Icons.tuctuc(20) }])}
+        ${Screens.F('Placa', 'plate', { max: 7, ph: f.vehicleType === 'tuctuc' ? 'TUC-123' : 'ABC-12D' })}
+        <div class="grid grid-cols-2 gap-2">${Screens.F('Marca y modelo', 'brand', { ph: 'Bajaj RE 2022' })}${Screens.F('Color', 'color', { ph: 'Rojo' })}</div>
+        ${Screens.F('Licencia de conducción', 'license', { ph: 'Número de licencia' })}
+        ${Screens.Check('soat', 'Tengo <b class="text-zinc-100">SOAT vigente</b> y revisión técnico-mecánica al día.')}
+        ${Screens.Check('docs', 'Tengo conmigo mi licencia y tarjeta de propiedad.')}`;
+      else body = `
+        <p class="text-sm text-zinc-400 mb-4">Paso 3 de 3. Así funciona el cobro en TamboGo.</p>
+        <div class="glass-in rounded-2xl p-4 mb-4 space-y-2 text-sm">
+          <div class="flex gap-3"><i class="fa-solid fa-wallet text-cyan-300 mt-0.5"></i><p>Cargas saldo a tu <b>billetera prepago</b> por Nequi.</p></div>
+          <div class="flex gap-3"><i class="fa-solid fa-scissors text-rose-400 mt-0.5"></i><p>Por cada carrera finalizada se descuentan <b>${fmt(AppState.driver.commissionPerTrip)}</b> de comisión.</p></div>
+          <div class="flex gap-3"><i class="fa-solid fa-hand-holding-dollar text-emerald-400 mt-0.5"></i><p>La tarifa completa te la paga el pasajero en efectivo o Nequi.</p></div>
+        </div>
+        ${Screens.F('Tu número de Nequi (donde te pagan)', 'nequi', { type: 'tel', mode: 'numeric', max: 10, ph: '3001234567' })}
+        ${Screens.Check('terms', 'Acepto los <a href="#" data-act="showTerms" class="text-emerald-300 underline font-bold">términos para conductores</a>, las normas de seguridad y el sistema de comisión.')}`;
+      return `${Screens.top(titles[s], s === 0 ? 'wBack' : 'driverBack')}${bar}${body}
+        <button class="cta tap mt-2" data-act="driverNext">${s === 2 ? 'Enviar solicitud' : 'Continuar'}</button>`;
+    },
+
+    driverPending() {
+      return `<div class="flex flex-col items-center text-center justify-center" style="min-height:80vh">
+        <div class="radar"><div class="grid"></div><span class="ring"></span><span class="ring"></span><span class="ring"></span><span class="ring"></span><div class="sweep"></div><div class="core"><i class="fa-solid fa-file-shield"></i></div></div>
+        <h1 class="text-2xl font-extrabold tracking-tight mt-2">Revisando tus documentos</h1>
+        <p class="text-sm text-zinc-400 mt-2 max-w-[320px]">Estamos validando tu licencia, SOAT y vehículo.</p>
+        ${Live.on ? '<p class="text-[12px] text-zinc-400 mt-6 max-w-[300px]">Te avisaremos aquí apenas aprueben tu cuenta. Mientras tanto puedes usar la app como pasajero.</p><button class="btn-ghost tap mt-5" data-act="closeScreen">Entendido</button>' : '<p class="text-[11px] text-zinc-500 mt-6 max-w-[300px]">Demo: la aprobación es automática.</p>'}</div>`;
+    },
+
+    driverDone() {
+      const a = AppState.account;
+      return `<div class="flex flex-col items-center text-center justify-center" style="min-height:80vh">
+        <div class="check-pop w-20 h-20 rounded-full bg-emerald-500/15 border border-emerald-500/50 flex items-center justify-center text-emerald-300 text-3xl mb-5 glow-em"><i class="fa-solid fa-check"></i></div>
+        <h1 class="text-2xl font-extrabold tracking-tight">¡Bienvenido, ${esc(a.name.split(' ')[0])}!</h1>
+        <p class="text-sm text-zinc-400 mt-2 max-w-[320px]">Tu cuenta de conductor está aprobada. Te regalamos <b class="text-emerald-300">${fmt(AppState.driver.walletBalance)}</b> de saldo de bienvenida para tus primeras carreras.</p>
+        <div class="glass-in rounded-2xl p-4 mt-6 w-full text-left text-sm flex items-center gap-3"><span class="text-emerald-400">${vIcon(a.driver.vehicleType, 28)}</span><div><p class="font-bold">${vehLabel(a.driver.vehicleType)} · ${esc(a.driver.plate)}</p><p class="text-xs text-zinc-400">${esc(a.driver.brand)} ${esc(a.driver.color)}</p></div></div>
+        <button class="cta tap mt-8" data-act="driverStart">Empezar a manejar</button></div>`;
+    },
+
+    menu() {
+      const a = AppState.account, isD = !!(a && a.driver);
+      const nP = AppState.history.filter(h => h.asPassenger).length, nD = AppState.history.filter(h => h.asDriver).length;
+      const item = (act, icon, label, extra = '') => `<button class="menu-item tap" data-act="${act}"><span class="ic"><i class="fa-solid ${icon}"></i></span><span class="flex-1">${label}</span>${extra}<i class="fa-solid fa-chevron-right text-zinc-600 text-xs"></i></button>`;
+      return `${Screens.top('Menú')}
+        <div class="glass-in rounded-3xl p-4 flex items-center gap-4 mb-4">
+          <div class="avatar !w-16 !h-16 !rounded-2xl !text-xl">${avatarHtml()}</div>
+          <div class="min-w-0 flex-1"><p class="font-extrabold text-lg truncate">${esc(a ? a.name : 'Invitado')}</p><p class="text-xs text-zinc-400">${a ? fmtPhone(a.phone) : ''}</p>
+            <p class="text-[11px] text-zinc-500 mt-1">${nP} viajes como pasajero${isD ? ' · ' + nD + ' como conductor' : ''}</p></div>
+        </div>
+        ${item('mHistory', 'fa-clock-rotate-left', 'Mis viajes')}
+        ${item('mProfile', 'fa-user-pen', 'Mi perfil')}
+        ${isD ? item('mWallet', 'fa-wallet', 'Billetera prepago', `<b class="text-cyan-300 text-sm mr-2">${fmt(AppState.driver.walletBalance)}</b>`) : item('mBecomeDriver', 'fa-id-card', 'Quiero ser conductor')}
+        ${item('mShare', 'fa-qrcode', 'Compartir TamboGo (QR)')}
+        ${item('mHelp', 'fa-shield-heart', 'Seguridad y ayuda')}
+        ${item('mTerms', 'fa-file-lines', 'Términos y privacidad')}
+        ${item('mNotify', 'fa-bell', 'Activar avisos')}
+        ${item('mSound', Sound.muted ? 'fa-volume-xmark' : 'fa-volume-high', Sound.muted ? 'Sonidos: silenciados' : 'Sonidos: activados')}
+        ${a && a.admin ? item('mAdmin', 'fa-gauge-high', 'Panel de administración') : ''}
+        ${item('mInstall', 'fa-download', 'Instalar en mi celular')}
+        ${item('mLogout', 'fa-right-from-bracket', 'Cerrar sesión')}
+        <p class="text-[11px] text-zinc-600 text-center mt-6">TamboGo · Versión 3.0 · ${Live.on ? 'Conectado a la nube' : 'Modo demo (sin servidor)'}</p>`;
+    },
+
+    history() {
+      const tab = Screens.tab, a = AppState.account;
+      const rows = AppState.history.filter(h => tab === 'p' ? h.asPassenger : h.asDriver);
+      const total = rows.reduce((s, h) => s + h.fare, 0);
+      const list = rows.map(h => `<div class="glass-in rounded-2xl p-3 mb-2">
+        <div class="flex items-center justify-between mb-1.5"><span class="text-[11px] text-zinc-400">${new Date(h.ts).toLocaleString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span><b class="tabular-nums">${fmt(h.fare)}</b></div>
+        <div class="text-xs text-zinc-300 space-y-1"><div class="flex items-center gap-2"><span class="dot-em !w-2 !h-2"></span><span class="truncate">${esc(shortAddr(h.from))}</span></div><div class="flex items-center gap-2"><i class="fa-solid fa-location-dot text-rose-500 w-2 text-[10px]"></i><span class="truncate">${esc(shortAddr(h.to))}</span></div></div>
+        <div class="flex items-center gap-2 mt-2 text-[11px] text-zinc-500"><span class="text-emerald-400">${vIcon(h.vehicle, 14)}</span>${vehLabel(h.vehicle)} · ${payLabel(h.payment)}${tab === 'd' ? ` · comisión ${fmt(h.commission)}` : ''}</div></div>`).join('');
+      return `${Screens.top('Mis viajes')}
+        ${a && a.driver ? `<div class="grid grid-cols-2 gap-2 mb-4"><button class="pay tap ${tab === 'p' ? 'on-cash' : ''}" data-act="hTab" data-t="p">Como pasajero</button><button class="pay tap ${tab === 'd' ? 'on-cash' : ''}" data-act="hTab" data-t="d">Como conductor</button></div>` : ''}
+        <div class="glass-in rounded-2xl p-4 mb-4 flex justify-between"><div><p class="text-[11px] text-zinc-400">Viajes</p><p class="text-2xl font-extrabold">${rows.length}</p></div><div class="text-right"><p class="text-[11px] text-zinc-400">${tab === 'p' ? 'Total gastado' : 'Total ganado'}</p><p class="text-2xl font-extrabold tabular-nums">${fmt(total)}</p></div></div>
+        ${list || `<div class="text-center py-10 text-zinc-500 text-sm"><i class="fa-solid fa-route text-3xl mb-3 block text-zinc-700"></i>Aún no tienes viajes. Cuando termines el primero aparecerá aquí.</div>`}`;
+    },
+
+    profile() {
+      const a = AppState.account, f = Screens.form, d = a.driver;
+      return `${Screens.top('Mi perfil')}
+        <div class="flex flex-col items-center mb-5">
+          <label class="relative cursor-pointer tap"><div class="avatar !w-24 !h-24 !rounded-3xl !text-3xl">${avatarHtml()}</div>
+            <span class="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-emerald-500 text-emerald-950 flex items-center justify-center border-2 border-zinc-950"><i class="fa-solid fa-camera text-sm"></i></span>
+            <input type="file" id="avatar-file" accept="image/*" hidden></label>
+          <p class="text-[11px] text-zinc-500 mt-3">Toca para cambiar tu foto</p>
+        </div>
+        ${Screens.F('Nombre completo', 'name', { ph: 'Tu nombre' })}
+        <label class="block mb-3"><span class="block text-xs font-semibold text-zinc-400 mb-1.5">Celular</span><input class="inp opacity-60" value="${fmtPhone(a.phone)}" disabled></label>
+        ${a.email ? `<label class="block mb-3"><span class="block text-xs font-semibold text-zinc-400 mb-1.5">Correo electrónico</span><input class="inp opacity-60" value="${esc(a.email)}" disabled></label>` : ''}
+        ${Live.on && a.email ? '<button class="btn-ghost tap w-full mb-3" data-act="changePass"><i class="fa-solid fa-key mr-1.5 text-emerald-400"></i>Cambiar mi contraseña (te enviamos un correo)</button>' : ''}
+        ${d ? `<div class="glass-in rounded-2xl p-4 mb-3 text-sm space-y-1.5">
+            <p class="text-[11px] text-zinc-400 font-semibold mb-1">Datos de conductor</p>
+            <div class="flex justify-between"><span class="text-zinc-400">Vehículo</span><b>${vehLabel(d.vehicleType)} · ${esc(d.plate)}</b></div>
+            <div class="flex justify-between"><span class="text-zinc-400">Modelo</span><b>${esc(d.brand)} ${esc(d.color)}</b></div>
+            <div class="flex justify-between"><span class="text-zinc-400">Estado</span><b class="text-emerald-300">Aprobado</b></div></div>
+          ${Screens.F('Número de Nequi', 'nequi', { type: 'tel', mode: 'numeric', max: 10 })}` : ''}
+        <button class="cta tap mt-2" data-act="saveProfile">Guardar cambios</button>
+        <button class="w-full text-sm font-bold text-rose-400 py-4 tap" data-act="deleteData">Eliminar mis datos de este dispositivo</button>`;
+    },
+
+    share() {
+      const kind = Screens.params.kind || 'passenger', url = Share.url(kind);
+      const isFile = location.protocol === 'file:' || /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname);
+      return `${Screens.top('Compartir TamboGo')}
+        <div class="grid grid-cols-2 gap-2 mb-4"><button class="pay tap ${kind === 'passenger' ? 'on-cash' : ''}" data-act="shareTab" data-k="passenger"><i class="fa-solid fa-user"></i>Pasajeros</button><button class="pay tap ${kind === 'driver' ? 'on-cash' : ''}" data-act="shareTab" data-k="driver"><i class="fa-solid fa-id-card"></i>Conductores</button></div>
+        <div class="glass-in rounded-3xl p-5 text-center glow-em">
+          <div class="flex justify-center mb-3">${Logo.icon(44)}</div>
+          <p class="font-extrabold text-lg">${kind === 'driver' ? 'Maneja con TamboGo' : 'Pide tu moto o tuctuc'}</p>
+          <p class="text-xs text-zinc-400 mt-1 mb-4">${kind === 'driver' ? 'Escanea y regístrate como conductor.' : 'Escanea y viaja por el precio que propones.'}</p>
+          <div id="qr-box" class="mx-auto w-[236px] h-[236px] rounded-2xl bg-white p-3"></div>
+          <p class="text-[11px] text-zinc-500 mt-3 break-all">${esc(url)}</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button class="btn-ghost tap" data-act="copyLink"><i class="fa-regular fa-copy mr-1.5 text-emerald-400"></i>Copiar enlace</button>
+          <button class="btn-ghost tap" data-act="shareLink"><i class="fa-solid fa-share-nodes mr-1.5 text-emerald-400"></i>Compartir</button>
+        </div>
+        <button class="cta tap mt-2" data-act="dlPoster"><i class="fa-solid fa-download mr-2"></i>Descargar cartel con QR</button>
+        <label class="block mt-5"><span class="block text-xs font-semibold text-zinc-400 mb-1.5">Dirección web donde publicaste la app</span>
+          <input id="public-url" class="inp" type="url" placeholder="https://tambogo.tudominio.com" value="${esc(AppState.publicUrl)}"></label>
+        <p class="text-[11px] text-zinc-500 mt-1">Pega aquí la URL pública para que los QR abran la app en cualquier celular.</p>
+        ${isFile ? `<div class="rounded-2xl p-3 mt-3 border border-amber-500/40 bg-amber-500/10 text-xs text-amber-200"><b>Antes de imprimir el QR:</b> ahora la app está abierta desde tu propio equipo. Publícala en un hosting con HTTPS (Netlify, GitHub Pages, Firebase Hosting, Vercel) y pega la URL arriba. Sin HTTPS el GPS no funciona.</div>` : ''}`;
+    },
+
+    terms() {
+      const sec = (t, b) => `<h2 class="font-extrabold mt-5 mb-1.5">${t}</h2><p class="text-sm text-zinc-300 leading-relaxed">${b}</p>`;
+      const contact = Live.settings && Live.settings.whatsapp ? 'el WhatsApp de soporte ' + esc(Live.settings.whatsapp) : 'los canales de soporte de la aplicación';
+      return `${Screens.top('Términos y privacidad', 'termsBack')}
+        <p class="text-xs text-zinc-500">Última actualización: 2026</p>
+        ${sec('1. Qué es TamboGo', 'TamboGo es una plataforma tecnológica que conecta pasajeros con conductores independientes de moto y tuctuc de El Tambo, Cauca. TamboGo no presta directamente el servicio de transporte ni es empleador de los conductores.')}
+        ${sec('2. Datos que recogemos', 'Nombre, número de celular, ubicación GPS mientras usas la app, historial de viajes y, en el caso de los conductores, cédula, licencia de conducción, datos del vehículo y número de Nequi.')}
+        ${sec('3. Para qué los usamos', 'Para conectar pasajeros y conductores, mostrar la ubicación durante el viaje, verificar conductores, atender emergencias y soporte, y prevenir fraudes. No vendemos tus datos.')}
+        ${sec('4. Tus derechos', 'Conforme a la Ley 1581 de 2012 puedes conocer, actualizar, rectificar y solicitar la supresión de tus datos, y revocar tu autorización. Escríbenos por ' + contact + '.')}
+        ${sec('5. Tarifas y pagos', 'La tarifa la acuerdan pasajero y conductor dentro de la app y se paga directamente al conductor en efectivo o por Nequi. Al conductor se le descuenta una comisión fija por cada carrera finalizada de su billetera prepago.')}
+        ${sec('6. Reglas para conductores', 'Debes tener licencia, SOAT y revisión técnico-mecánica vigentes, usar casco y cumplir las normas de tránsito. TamboGo puede suspender cuentas por incumplimiento, información falsa o quejas de seguridad.')}
+        ${sec('7. Convivencia y seguridad', 'Verifica la placa y el conductor antes de subir, usa el PIN del viaje y respeta a la otra persona. Ante una emergencia usa el botón de emergencia de la app o llama al 123.')}
+        ${sec('8. Cambios', 'Podemos actualizar estos términos. Si los cambios son importantes te lo avisaremos en la aplicación.')}
+        <button class="cta tap mt-6" data-act="termsBack">Entendido</button>`;
+    },
+
+    help() {
+      const step = (n, t, d) => `<div class="flex gap-3 mb-4"><span class="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-extrabold text-sm flex items-center justify-center shrink-0">${n}</span><div><p class="font-bold text-sm">${t}</p><p class="text-xs text-zinc-400 mt-0.5">${d}</p></div></div>`;
+      return `${Screens.top('Seguridad y ayuda')}
+        <a href="tel:123" class="cta tap !bg-none !bg-rose-500 !text-white mb-5" style="background:#f43f5e;color:#fff;box-shadow:0 8px 30px -8px rgba(244,63,94,.6)"><i class="fa-solid fa-phone mr-2"></i>Llamar a emergencias 123</a>
+        ${Live.settings && Live.settings.whatsapp ? `<a href="https://wa.me/57${esc(Live.settings.whatsapp)}" target="_blank" rel="noopener" class="btn-ghost tap block mb-5"><i class="fa-brands fa-whatsapp mr-1.5 text-emerald-400"></i>Escribir a soporte por WhatsApp</a>` : ''}
+        <h2 class="font-extrabold mb-3">Cómo funciona</h2>
+        ${step(1, 'Elige origen y destino', 'Tu ubicación llega por GPS o escribes la dirección o fijas el punto en el mapa.')}
+        ${step(2, 'Propón tu precio', 'Los conductores cercanos aceptan tu oferta o te contraofertan.')}
+        ${step(3, 'Sube con tu PIN', 'Dile al conductor tu PIN de 4 dígitos para iniciar el viaje.')}
+        ${step(4, 'Paga y califica', 'Paga en efectivo o por Nequi directamente al conductor.')}
+        <h2 class="font-extrabold mt-6 mb-3">Consejos de seguridad</h2>
+        <ul class="text-sm text-zinc-300 space-y-2.5 list-disc pl-5"><li>Verifica que la placa y el conductor coincidan con la app.</li><li>Comparte tu viaje con alguien de confianza desde la pantalla del viaje.</li><li>En moto, el casco es obligatorio para conductor y pasajero.</li><li>Nunca pagues por fuera de la tarifa acordada.</li></ul>`;
+    }
+  }
+};
+
+/* Compartir / QR */
+const Share = {
+  url(kind) {
+    let base = (AppState.publicUrl || '').trim();
+    if (!base) base = location.origin && location.origin !== 'null' ? location.origin + location.pathname : location.href.split(/[?#]/)[0];
+    return base.replace(/[?#].*$/, '') + '?ref=' + kind;
+  },
+  paint() { makeQR('#qr-box', this.url(Screens.params.kind || 'passenger'), 212); },
+  async poster() {
+    const kind = Screens.params.kind || 'passenger', url = this.url(kind);
+    const W = 1080, H = 1500, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.fillStyle = '#09090b'; x.fillRect(0, 0, W, H);
+    const g = x.createRadialGradient(W / 2, 330, 40, W / 2, 330, 760); g.addColorStop(0, 'rgba(16,185,129,.38)'); g.addColorStop(1, 'rgba(16,185,129,0)');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    const img = new Image();
+    await new Promise(res => { img.onload = res; img.onerror = res; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(Logo.icon(240)); });
+    x.drawImage(img, W / 2 - 120, 90, 240, 240);
+    x.font = '800 104px "Plus Jakarta Sans", system-ui, sans-serif';
+    const w1 = x.measureText('Tambo').width, w2 = x.measureText('Go').width, sx = W / 2 - (w1 + w2) / 2;
+    x.textAlign = 'left'; x.fillStyle = '#fafafa'; x.fillText('Tambo', sx, 470); x.fillStyle = '#34d399'; x.fillText('Go', sx + w1, 470);
+    x.textAlign = 'center'; x.fillStyle = '#fafafa'; x.font = '800 60px "Plus Jakarta Sans", system-ui, sans-serif';
+    x.fillText(kind === 'driver' ? 'Maneja con TamboGo' : 'Pide tu moto o tuctuc', W / 2, 590);
+    x.fillStyle = '#a1a1aa'; x.font = '500 38px "Plus Jakarta Sans", system-ui, sans-serif';
+    x.fillText(kind === 'driver' ? 'Escanea y regístrate como conductor' : 'Escanea y viaja por el precio que tú propones', W / 2, 655);
+    x.fillStyle = '#ffffff'; x.beginPath(); x.roundRect ? x.roundRect(240, 720, 600, 600, 48) : x.rect(240, 720, 600, 600); x.fill();
+    const qc = document.querySelector('#qr-box canvas'), qi = document.querySelector('#qr-box img');
+    const src = qc || qi; if (src) x.drawImage(src, 280, 760, 520, 520);
+    x.fillStyle = '#71717a'; x.font = '500 30px "Plus Jakarta Sans", system-ui, sans-serif';
+    x.fillText('Servicio local · El Tambo, Cauca', W / 2, 1400);
+    const a = document.createElement('a'); a.download = `tambogo-qr-${kind}.png`; a.href = c.toDataURL('image/png'); document.body.appendChild(a); a.click(); a.remove();
+    toast('Cartel descargado.', 'ok');
+  }
+};
+
+/* Instalación PWA */
+const Install = { ev: null };
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); Install.ev = e; });
+
+/* =====================================================================
+   ACCIONES
+   ===================================================================== */
+const Actions = {
+  setRole(ds) {
+    if (!AppState.account) { Screens.show('welcome'); return; }
+    if (ds.role === 'driver' && !Account.driverOk()) { Onboard.startDriver(); return; }
+    AppState.currentRole = ds.role; AppState.ui.collapsed = false; AppState.ui.pick = null;
+    if (ds.role === 'driver') { GPS.start(); Driver.dispatchRealRequest(); }
+    render({ fit: true }); Store.save();
+  },
+  goHome() {
+    Screens.close(); AppState.ui.recharge = false; AppState.ui.pick = null; AppState.ui.collapsed = false;
+    if (!AppState.account) { Screens.show('welcome'); return; }
+    render({ fit: true });
+  },
+  toggleSheet() { AppState.ui.collapsed = !AppState.ui.collapsed; render({ fit: true }); },
+  locate() { MapView.locate(); },
+
+  /* Pasajero */
+  openPick(ds) { Pick.open(ds.f); },
+  pickClose() { Pick.close(); },
+  pickItem(ds) { Pick.choose(+ds.i); },
+  pickGps() { Pick.useGps(); },
+  pickMap() { Pick.pin(); },
+  pinBack() { AppState.ui.pick.mode = 'search'; render(); },
+  pinConfirm() { Pick.confirmPin(); },
+  pickPlace(ds) { const pl = PLACES[+ds.i]; Pick.apply('dropoff', { lat: pl.lat, lng: pl.lng, address: pl.name }); },
+  setVehicle(ds) { AppState.passenger.selectedVehicle = ds.v; AppState.passenger.offeredFare = Fare.suggest(); render(); Store.save(); },
+  fareDown() { const p = AppState.passenger; p.offeredFare = clamp(p.offeredFare - 500, 1500, 60000); render(); Store.save(); },
+  fareUp() { const p = AppState.passenger; p.offeredFare = clamp(p.offeredFare + 500, 1500, 60000); render(); Store.save(); },
+  setPay(ds) { AppState.passenger.paymentMethod = ds.m; render(); Store.save(); },
+  request() { return Passenger.request(); },
+  raise() { return Passenger.raise(); },
+  acceptOffer(ds) { return Passenger.acceptOffer(ds.id); },
+  cancel() {
+    const t = AppState.activeTrip;
+    if (t && AppState.currentRole === 'driver' && t.isRealDriver) Driver.cancelTrip(); else Passenger.cancel();
+  },
+  rate(ds) { const t = AppState.activeTrip; if (t) { t.rating = +ds.n; render(); } },
+  dismissPassenger() { if (Live.on) Live.submitRating(); Trip.dismiss('p'); },
+  sos() {
+    if (!confirm('¿Enviar una alerta de emergencia a TamboGo y llamar al 123?')) return;
+    if (Live.on) Live.sos();
+    location.href = 'tel:123';
+  },
+  showTerms() { Screens.prev = { name: Screens.name, step: Screens.step }; Screens.show('terms'); },
+  mTerms() { Screens.prev = { name: 'menu', step: 0 }; Screens.show('terms'); },
+  termsBack() { const p = Screens.prev || { name: 'menu', step: 0 }; Screens.step = p.step; Screens.show(p.name); },
+  mNotify() { Notify.ask(); },
+  mSound() { Sound.toggle(); Screens.refresh(); },
+  mAdmin() { location.href = 'admin.html'; },
+  shareTrip() { Passenger.share(); },
+
+  /* Conductor */
+  toggleOnline() { Driver.toggleOnline(); },
+  reqAccept() { return Driver.accept(false); },
+  reqCounter() { return Driver.accept(true); },
+  reqReject() { Driver.reject(); },
+  arrived() { return Driver.arrived(); },
+  startRide() { return Driver.start(); },
+  finishRide() { return Driver.finish(); },
+  dismissDriver() { Trip.dismiss('d'); },
+  openRecharge() { Wallet.open(); },
+  closeRecharge() { Wallet.close(); },
+  amt(ds) { AppState.ui.rechargeAmount = +ds.a; UI.modal(); },
+  confirmRecharge() { return Wallet.confirm(); },
+  copyNequi() {
+    const n = CONFIG.nequiPlataforma;
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(n).then(() => toast('Número copiado.', 'ok')).catch(() => toast(n, 'info'));
+    else toast(n, 'info');
+  },
+
+  /* Pantallas */
+  openMenu() { if (!AppState.account) Screens.show('welcome'); else Screens.show('menu'); },
+  closeScreen() { Screens.close(); },
+  wPassenger() { Onboard.startPassenger(); },
+  wDriver() { Onboard.startDriver(); },
+  wLogin() { Screens.form = {}; Screens.show('login'); },
+  forgot() { Screens.show('forgot', { sent: false }); },
+  forgotBack() { Screens.show('login'); },
+  sendReset() { return Live.sendReset(Screens.form.login || ''); },
+  changePass() { if (Live.on) Live.changePass(); },
+  wBack() { if (AppState.account && AppState.session) Screens.close(); else Screens.show('welcome'); },
+  doLogin() {
+    if (Live.on) return Live.login(Screens.form.login || '', Screens.form.password || '');
+    const a = AppState.account, v = (Screens.form.phone || '').trim();
+    if (a && a.phone === v) { AppState.session = true; Store.save(); Onboard.enterApp(); }
+    else toast('No encontramos una cuenta con ese celular en este dispositivo.', 'danger');
+  },
+  formSet(ds) { Screens.form[ds.k] = ds.v; Screens.refresh(); },
+  submitPassenger() {
+    const e = Screens.validate('passenger'); if (e) { Screens.flagError(e); return; }
+    if (Live.on) return Live.registerPassenger(Screens.form);
+    Account.registerPassenger(Screens.form); Screens.show('gps');
+  },
+  gpsAllow() { GPS.start(); Onboard.enterApp(); },
+  gpsSkip() { AppState.passenger.pickupMode = 'manual'; Onboard.enterApp(); Pick.open('pickup'); },
+  driverBack() { Screens.step = Math.max(0, Screens.step - 1); Screens.refresh(); },
+  driverNext() {
+    const e = Screens.validate('driver', Screens.step); if (e) { Screens.flagError(e); return; }
+    if (Screens.step < 2) { Screens.step++; Screens.show('regDriver'); return; }
+    const f = Screens.form; f.plate = f.plate.replace('-', '').replace(/^([A-Z]{3})(.+)$/, '$1-$2');
+    if (Live.on) return Live.registerDriver(f);
+    Account.registerDriver(f);
+    Screens.show('driverPending');
+    Timers.set('approve', () => { AppState.account.driver.status = 'approved'; Store.save(); Screens.show('driverDone'); }, 2800);
+  },
+  driverStart() { AppState.currentRole = 'driver'; Store.save(); Onboard.enterApp(); },
+  mHistory() { Screens.tab = 'p'; Screens.show('history'); },
+  hTab(ds) { Screens.tab = ds.t; Screens.refresh(); },
+  mProfile() { const a = AppState.account; Screens.form = { name: a.name, nequi: a.driver ? a.driver.nequi : '' }; Screens.show('profile'); },
+  mWallet() { Screens.close(); AppState.currentRole = 'driver'; render({ fit: true }); Wallet.open(); },
+  mBecomeDriver() { Onboard.startDriver(); },
+  mShare() { Screens.show('share', { kind: 'passenger' }); },
+  mHelp() { Screens.show('help'); },
+  mInstall() {
+    if (Install.ev) { Install.ev.prompt(); Install.ev = null; }
+    else toast('En Android: menú ⋮ → Instalar app. En iPhone: Compartir → Agregar a inicio.', 'info');
+  },
+  mLogout() { if (Live.on) Live.logout(); AppState.session = false; Driver.stopSim(); AppState.driver.isOnline = false; Store.save(); Screens.show('welcome'); },
+  saveProfile() {
+    const f = Screens.form, a = AppState.account;
+    if (!f.name || f.name.trim().length < 3) { Screens.flagError({ k: 'name', msg: 'Escribe tu nombre completo.' }); return; }
+    if (a.driver) { if (!/^3\d{9}$/.test(f.nequi || '')) { Screens.flagError({ k: 'nequi', msg: 'Nequi de 10 dígitos.' }); return; } a.driver.nequi = f.nequi; }
+    a.name = f.name.trim(); Account.applyDriver(); if (Live.on) Live.saveProfile(); Store.save(); render(); toast('Perfil actualizado.', 'ok'); Screens.show('menu');
+  },
+  deleteData() {
+    if (!confirm('Se borrará tu cuenta, historial y saldo de este dispositivo. ¿Continuar?')) return;
+    if (Live.on) Live.logout();
+    try { localStorage.removeItem(STORE_KEY); } catch (e) { /* sin almacenamiento */ }
+    location.reload();
+  },
+  shareTab(ds) { Screens.params.kind = ds.k; Screens.refresh(); },
+  copyLink() { const u = Share.url(Screens.params.kind || 'passenger'); if (navigator.clipboard) navigator.clipboard.writeText(u).then(() => toast('Enlace copiado.', 'ok')); else toast(u, 'info'); },
+  shareLink() {
+    const kind = Screens.params.kind || 'passenger', u = Share.url(kind);
+    const text = kind === 'driver' ? 'Regístrate como conductor en TamboGo' : 'Pide tu moto o tuctuc en TamboGo';
+    if (navigator.share) navigator.share({ title: 'TamboGo', text, url: u }).catch(() => {}); else Actions.copyLink();
+  },
+  dlPoster() { Share.poster(); }
+};
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (el && Actions[el.dataset.act]) {
+    if (el.tagName === 'A' && el.getAttribute('href') === '#') e.preventDefault();
+    if (el.classList.contains('loading')) return;
+    Sound.unlock();
+    if (el.dataset.act !== 'toggleSheet') Sound.play('tap');
+    const res = Actions[el.dataset.act](el.dataset, el);
+    if (res && typeof res.then === 'function') {
+      el.classList.add('loading');
+      const done = () => el.classList.remove('loading');
+      res.then(done, done);
+    }
+  }
+  else if (e.target.id === 'modal' && AppState.ui.rechargeState !== 'verifying') Wallet.close();
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'pick-q') { Pick.onInput(t.value); return; }
+  if (t.id === 'trip-note') { AppState.passenger.note = t.value; return; }
+  if (t.id === 'public-url') { AppState.publicUrl = t.value; Store.save(); Share.paint(); const u = document.querySelector('#screen .break-all'); if (u) u.textContent = Share.url(Screens.params.kind || 'passenger'); return; }
+  if (t.id === 'pin-in') { t.value = t.value.replace(/\D/g, '').slice(0, 4); t.classList.remove('err'); return; }
+  const k = t.dataset && t.dataset.form;
+  if (!k) return;
+  if (['phone', 'nequi', 'cedula'].includes(k)) t.value = t.value.replace(/\D/g, '').slice(0, k === 'cedula' ? 10 : 10);
+  if (k === 'plate') t.value = t.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  Screens.form[k] = t.type === 'checkbox' ? t.checked : t.value;
+  t.classList.remove('err');
+});
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'avatar-file' && e.target.files && e.target.files[0]) {
+    readAvatar(e.target.files[0], data => { AppState.account.avatar = data; if (Live.on) Live.saveAvatar(data); Store.save(); Screens.refresh(); render(); toast('Foto actualizada.', 'ok'); });
+  }
+});
+
+document.querySelectorAll('.handle-hit').forEach(h => {
+  let y0 = null;
+  h.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; }, { passive: true });
+  h.addEventListener('touchend', e => {
+    if (y0 === null) return;
+    const dy = e.changedTouches[0].clientY - y0; y0 = null;
+    if (Math.abs(dy) > 30) { AppState.ui.collapsed = dy > 0; render({ fit: true }); }
+  }, { passive: true });
+});
+
+setInterval(() => {
+  const r = AppState.driver.activeRequest;
+  if (!r || r.source !== 'sim' || r.status !== 'new') return;
+  const left = Math.ceil((r.expiresAt - Date.now()) / 1000);
+  if (left <= 0) { AppState.driver.activeRequest = null; toast('La solicitud venció.', 'warn'); render({ fit: true }); return; }
+  const c = $('#req-count'); if (c) c.textContent = left + 's';
+  const b = $('#req-bar'); if (b) b.style.width = (left / 25 * 100) + '%';
+}, 500);
+
+/* =====================================================================
+   ONBOARDING Y ARRANQUE
+   ===================================================================== */
+/* =====================================================================
+   MODO EN VIVO (Firebase): cuentas, conductores y viajes reales
+   ===================================================================== */
+const Live = {
+  on: false, db: null, auth: null, uid: null, pin: null,
+  unsubs: {}, started: false, dStarted: false, registering: false, manual: false, walletReady: false,
+  metaCache: {}, settings: {},
+  rejected: new Set(), myOffers: new Set(), driverList: [], near: 0, _res: null, _anim: null, ready: null,
+
+  init() {
+    this.ready = new Promise(r => { this._res = r; });
+    try {
+      const c = CONFIG.firebase;
+      if (!c.apiKey || typeof firebase === 'undefined') { this._res(); this._res = null; return; }
+      firebase.initializeApp(c);
+      this.auth = firebase.auth(); this.db = firebase.firestore();
+      this.auth.languageCode = 'es';
+      this.on = true; AppState.driver.walletBalance = 0;
+      this.auth.onAuthStateChanged(async u => {
+        if (this.registering || this.manual) return;
+        if (u) { try { await this.loadProfile(u); } catch (e) { console.warn(e); } }
+        else { this.stopAll(); AppState.account = null; AppState.session = false; }
+        if (this._res) { this._res(); this._res = null; }
+      });
+      setInterval(() => this.paintDrivers(), 20000);
+    } catch (e) { console.warn('Firebase no disponible', e); this.on = false; if (this._res) { this._res(); this._res = null; } }
+  },
+
+  ts() { return firebase.firestore.FieldValue.serverTimestamp(); },
+  inc(n) { return firebase.firestore.FieldValue.increment(n); },
+  email(p) { const [u, d] = CONFIG.emailBase.split('@'); return `${u}+${p}@${d}`; },
+  legacyEmail(p) { return p + '@tambogo.app'; },
+  col(n) { return this.db.collection(n); },
+  err(e) {
+    console.warn(e);
+    const c = (e && e.code) || '';
+    toast(c === 'permission-denied' ? 'Acción no permitida. Revisa tu cuenta o las reglas de Firestore.' : c === 'unavailable' ? 'Sin conexión. Intenta de nuevo.' : 'Ocurrió un error. Intenta de nuevo.', 'danger');
+  },
+  authErr(e) {
+    const m = {
+      'auth/email-already-in-use': 'Ese correo ya tiene cuenta. Toca “Ya tengo cuenta”.',
+      'auth/invalid-email': 'El correo no es válido.',
+      'auth/weak-password': 'La contraseña es muy corta (mínimo 6).',
+      'auth/invalid-credential': 'Celular o contraseña incorrectos.',
+      'auth/wrong-password': 'Celular o contraseña incorrectos.',
+      'auth/user-not-found': 'Celular o contraseña incorrectos.',
+      'auth/network-request-failed': 'Sin conexión. Intenta de nuevo.',
+      'auth/too-many-requests': 'Demasiados intentos. Espera unos minutos.'
+    };
+    console.warn(e);
+    toast(m[(e && e.code) || ''] || 'No se pudo completar. Intenta de nuevo.', 'danger');
+  },
+
+  /* ---------- Cuentas ---------- */
+  async loadProfile(u) {
+    this.uid = u.uid;
+    const us = await this.col('users').doc(u.uid).get();
+    if (!us.exists) {
+      AppState.account = null; AppState.session = false;
+      try { await this.auth.signOut(); } catch (e) { /* ya cerrada */ }
+      toast('Esta cuenta fue eliminada. Escríbenos a soporte.', 'danger'); return;
+    }
+    const ud = us.data();
+    if (ud.suspended) {
+      AppState.account = null; AppState.session = false;
+      try { await this.auth.signOut(); } catch (e) { /* ya cerrada */ }
+      toast('Tu cuenta está suspendida. Escríbenos a soporte.', 'danger'); return;
+    }
+    const realEmail = u.email && !/@tambogo\.app$/.test(u.email) && !u.email.startsWith(CONFIG.emailBase.split('@')[0] + '+');
+    const acc = { id: u.uid, name: ud.name, phone: ud.phone, email: realEmail ? u.email : '', avatar: ud.avatar || null, passenger: true, payment: AppState.passenger.paymentMethod || 'cash', driver: null, admin: !!ud.admin };
+    if (!ud.email && acc.email) this.col('users').doc(u.uid).update({ email: acc.email }).catch(() => {});
+    const ds = await this.col('drivers').doc(u.uid).get();
+    if (ds.exists) {
+      const dd = ds.data(); let pr = {};
+      try { const p = await this.col('driverPrivate').doc(u.uid).get(); pr = p.exists ? p.data() : {}; } catch (e) { pr = {}; }
+      acc.driver = { cedula: pr.cedula, vehicleType: dd.vehicleType, plate: dd.plate, brand: dd.brand, color: dd.color, license: pr.license, nequi: pr.nequi || ud.phone, status: dd.status, rating: dd.ratingCount ? (dd.ratingSum / dd.ratingCount).toFixed(1) : 'Nuevo' };
+      this.col('drivers').doc(u.uid).update({ online: false }).catch(() => {});
+    }
+    AppState.account = acc; AppState.session = true;
+    Account.applyDriver(); Store.save();
+    if (acc.email) this.ensurePhoneIndex(acc.email, u.uid, ud.phone);
+    this.startListeners(); this.startDriverListeners();
+    this.loadSettings(); this.loadHistory();
+  },
+
+  async registerPassenger(f) {
+    this.registering = true;
+    try {
+      if (await this.phoneTaken(f.phone)) { this.registering = false; toast('Ese celular ya está registrado. Ingresa con tu correo o recupera tu contraseña.', 'warn'); return; }
+      const cred = await this.auth.createUserWithEmailAndPassword(f.email.trim().toLowerCase(), f.password);
+      if (this.auth.currentUser) this.auth.currentUser.sendEmailVerification().catch(() => {});
+      await this.col('users').doc(cred.user.uid).set({ name: f.name.trim(), phone: f.phone, email: f.email.trim().toLowerCase(), createdAt: this.ts() });
+      await this.indexPhone(f.phone, f.email.trim().toLowerCase(), cred.user.uid);
+      AppState.passenger.paymentMethod = f.payment || 'cash';
+      this.registering = false;
+      await this.loadProfile(cred.user);
+      Screens.show('gps'); Sound.play('success');
+    } catch (e) { this.registering = false; this.authErr(e); }
+  },
+
+  async registerDriver(f) {
+    this.registering = true;
+    try {
+      let user = this.auth.currentUser;
+      if (!user) {
+        if (await this.phoneTaken(f.phone)) { this.registering = false; toast('Ese celular ya está registrado. Ingresa con tu correo o recupera tu contraseña.', 'warn'); return; }
+        const cred = await this.auth.createUserWithEmailAndPassword(f.email.trim().toLowerCase(), f.password);
+      if (this.auth.currentUser) this.auth.currentUser.sendEmailVerification().catch(() => {});
+        user = cred.user;
+        await this.col('users').doc(user.uid).set({ name: f.name.trim(), phone: f.phone, email: f.email.trim().toLowerCase(), createdAt: this.ts() });
+        await this.indexPhone(f.phone, f.email.trim().toLowerCase(), user.uid);
+      }
+      const uid = user.uid, b = this.db.batch();
+      b.set(this.col('drivers').doc(uid), { name: f.name.trim(), vehicleType: f.vehicleType, plate: f.plate, brand: f.brand.trim(), color: f.color.trim(), status: 'pending', online: false, ratingSum: 0, ratingCount: 0, updatedAt: this.ts() });
+      b.set(this.col('driverPrivate').doc(uid), { cedula: f.cedula, license: f.license.trim(), phone: f.phone, nequi: f.nequi });
+      b.set(this.col('wallets').doc(uid), { balance: 0, lastTripId: '' });
+      await b.commit();
+      this.registering = false;
+      await this.loadProfile(user);
+      Screens.show('driverPending'); Sound.play('success');
+    } catch (e) { this.registering = false; this.authErr(e); }
+  },
+
+  async login(id, pass) {
+    id = (id || '').trim().toLowerCase();
+    if (!id || !pass) { toast('Escribe tu correo y tu contraseña.', 'warn'); return; }
+    this.manual = true;
+    try {
+      let cred;
+      if (id.includes('@')) cred = await this.auth.signInWithEmailAndPassword(id, pass);
+      else if (/^3\d{9}$/.test(id)) {
+        let mapped = null;
+        try { const d = await this.col('phoneIndex').doc(id).get(); mapped = d.exists ? d.data().email : null; } catch (e0) { mapped = null; }
+        if (mapped) cred = await this.auth.signInWithEmailAndPassword(mapped, pass);
+        else {
+          try { cred = await this.auth.signInWithEmailAndPassword(this.email(id), pass); }
+          catch (e1) {
+            if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(e1 && e1.code)) cred = await this.auth.signInWithEmailAndPassword(this.legacyEmail(id), pass);
+            else throw e1;
+          }
+        }
+      } else { this.manual = false; toast('Escribe tu correo electrónico.', 'warn'); return; }
+      await this.loadProfile(cred.user);
+      this.manual = false;
+      if (!AppState.session) return;
+      Sound.play('success');
+      Onboard.enterApp();
+    } catch (e) {
+      this.manual = false;
+      if (!id.includes('@') && e && ['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(e.code)) { toast('Celular o contraseña incorrectos. También puedes ingresar con tu correo.', 'warn'); return; }
+      this.authErr(e);
+    }
+  },
+
+  logout() { this.stopAll(); AppState.activeTrip = null; AppState.offers = []; AppState.driver.isOnline = false; if (this.auth) this.auth.signOut().catch(() => {}); },
+  saveProfile() {
+    const a = AppState.account; if (!this.uid) return;
+    this.col('users').doc(this.uid).update({ name: a.name }).catch(e => this.err(e));
+    if (a.driver) {
+      this.col('drivers').doc(this.uid).update({ name: a.name }).catch(() => {});
+      this.col('driverPrivate').doc(this.uid).update({ nequi: a.driver.nequi }).catch(() => {});
+    }
+  },
+  saveAvatar(data) { if (this.uid) this.col('users').doc(this.uid).update({ avatar: data }).catch(e => this.err(e)); },
+
+  stopAll() {
+    Object.values(this.unsubs).forEach(f => { try { f(); } catch (e) { /* ya cerrado */ } });
+    this.unsubs = {}; this.started = false; this.dStarted = false; this.walletReady = false;
+    Timers.stopEvery('pub'); this.uid = null;
+  },
+
+  /* ---------- Escuchas ---------- */
+  startListeners() {
+    if (this.started || !this.uid) return;
+    this.started = true;
+    this.unsubs.me = this.col('users').doc(this.uid).onSnapshot(s => { if (s.exists && s.data().suspended) this.forceSuspend(); }, () => {});
+    this.unsubs.drivers = this.col('drivers').where('online', '==', true).onSnapshot(s => {
+      this.driverList = s.docs.filter(x => x.id !== this.uid).map(x => x.data()); this.paintDrivers();
+    }, () => {});
+    this.col('trips').where('passengerId', '==', this.uid).where('status', 'in', ['searching', 'accepted', 'arrived', 'in_progress']).limit(1).get().then(async s => {
+      if (s.empty || AppState.activeTrip) return;
+      const id = s.docs[0].id;
+      try { const pd = await this.col('trips').doc(id).collection('private').doc('pin').get(); this.pin = pd.exists ? pd.data().pin : '----'; } catch (e) { this.pin = '----'; }
+      this.watchTrip(id);
+    }).catch(() => {});
+  },
+
+  startDriverListeners() {
+    const a = AppState.account;
+    if (!a || !a.driver || this.dStarted || !this.uid) return;
+    this.dStarted = true;
+    const uid = this.uid;
+    this.unsubs.drv = this.col('drivers').doc(uid).onSnapshot(s => {
+      const st = s.exists && s.data().status;
+      if (st && AppState.account && AppState.account.driver && st !== AppState.account.driver.status) {
+        AppState.account.driver.status = st;
+        if (st === 'approved') { toast('¡Tu cuenta de conductor fue aprobada!', 'ok'); if (Screens.name === 'driverPending') Screens.show('driverDone'); }
+        else if (st === 'rejected') toast('Tu solicitud de conductor no fue aprobada. Contáctanos.', 'danger');
+        render();
+      }
+    }, () => {});
+    this.unsubs.wallet = this.col('wallets').doc(uid).onSnapshot(s => {
+      if (!s.exists) return;
+      const b = s.data().balance || 0, old = AppState.driver.walletBalance, d = AppState.driver;
+      d.walletBalance = b;
+      if (b > old && this.walletReady) { toast(`Saldo acreditado: ${fmt(b - old)}`, 'ok'); Sound.play('coin'); if (AppState.ui.rechargeState === 'pending') AppState.ui.rechargeState = 'done'; }
+      this.walletReady = true;
+      if (d.isOnline && b < d.commissionPerTrip && !(AppState.activeTrip && AppState.activeTrip.isRealDriver)) {
+        this.goOffline(); d.isOnline = false; toast('Saldo agotado: te desconectamos. Recarga para seguir.', 'danger');
+      }
+      if (AppState.currentRole === 'driver' || AppState.ui.recharge) render(); else UI.modal();
+      Store.save();
+    }, () => {});
+    this.unsubs.tx = this.col('wallets').doc(uid).collection('tx').orderBy('ts', 'desc').limit(5).onSnapshot(s => {
+      AppState.transactions = s.docs.map(x => { const v = x.data(); return { id: x.id, type: v.type, amount: v.amount, desc: v.desc, ts: v.ts && v.ts.toMillis ? v.ts.toMillis() : Date.now() }; });
+      if (AppState.currentRole === 'driver') render();
+    }, () => {});
+    this.unsubs.dtrips = this.col('trips').where('driverId', '==', uid).where('status', 'in', ['accepted', 'arrived', 'in_progress']).onSnapshot(s => this.onDriverTrips(s), () => {});
+  },
+
+  /* ---------- Marcadores de conductores en línea ---------- */
+  paintDrivers() {
+    if (!MapView.amb) return;
+    MapView.amb.clearLayers();
+    const now = Date.now(), base = AppState.passenger.pickup; let n = 0;
+    (this.driverList || []).forEach(d => {
+      if (d.lat == null || d.lng == null) return;
+      const age = d.updatedAt && d.updatedAt.toMillis ? now - d.updatedAt.toMillis() : 0;
+      if (age > 120000 || Geo.km(base, d) > 10) return;
+      n++; L.marker([d.lat, d.lng], { icon: MapView.icons.amb(d.vehicleType), interactive: false }).addTo(MapView.amb);
+    });
+    this.near = n;
+    document.querySelectorAll('.js-ndrv').forEach(e => { e.textContent = n; });
+  },
+
+  /* ---------- Pasajero ---------- */
+  async request(dist) {
+    if (this.settings && this.settings.serviceOpen === false) { toast(this.settings.notice || 'El servicio está pausado por ahora.', 'warn'); return; }
+    const p = AppState.passenger, a = AppState.account;
+    const ref = this.col('trips').doc(), pin = String(Math.floor(1000 + Math.random() * 9000));
+    this.pin = pin;
+    try {
+      const b = this.db.batch();
+      b.set(ref, { passengerId: this.uid, passengerName: a.name, pickup: { ...p.pickup }, dropoff: { ...p.dropoff }, vehicle: p.selectedVehicle, fare: p.offeredFare, payment: p.paymentMethod, distKm: dist, note: p.note.trim(), status: 'searching', driverId: null, driverInfo: null, driverPos: null, createdAt: this.ts() });
+      b.set(ref.collection('private').doc('pin'), { pin });
+      await b.commit();
+      AppState.ui.pick = null; AppState.ui.collapsed = false;
+      this.watchTrip(ref.id);
+    } catch (e) { this.err(e); }
+  },
+
+  watchTrip(id) {
+    this.clearTripWatch();
+    const tr = this.col('trips').doc(id);
+    this.unsubs.trip = tr.onSnapshot(d => this.onPassengerTrip(d), e => this.err(e));
+    this.unsubs.offers = tr.collection('offers').onSnapshot(async s => {
+      const list = await Promise.all(s.docs.map(async x => {
+        const o = { id: x.id, ...x.data(), isReal: false }, m = await this.driverMeta(x.id);
+        if (m) { o.rating = m.rating; o.plate = m.plate; o.name = m.name; o.vehicle = m.vehicle; }
+        return o;
+      }));
+      const prevN = AppState.offers.length;
+      AppState.offers = list;
+      if (list.length > prevN) Sound.play('offer');
+      const t = AppState.activeTrip; if (t && t.status === 'searching') render();
+    }, () => {});
+  },
+  clearTripWatch() {
+    ['trip', 'offers'].forEach(k => { if (this.unsubs[k]) { this.unsubs[k](); delete this.unsubs[k]; } });
+    AppState.offers = [];
+  },
+
+  onPassengerTrip(doc) {
+    if (!doc.exists) return;
+    const d = doc.data(), prev = AppState.activeTrip;
+    if (d.status === 'cancelled') { if (prev && prev.id === doc.id) Trip.reset('El viaje fue cancelado.', 'warn'); return; }
+    const same = !!(prev && prev.id === doc.id);
+    const t = {
+      id: doc.id, isRealPassenger: true, isRealDriver: false, passengerName: d.passengerName, driverId: d.driverId || null, rated: !!d.rating,
+      pickup: d.pickup, dropoff: d.dropoff, vehicle: d.vehicle, fare: d.fare, payment: d.payment, distKm: d.distKm || 1, note: d.note || '',
+      pin: this.pin || '----', status: d.status, driver: d.driverInfo ? { ...d.driverInfo, isReal: false } : null,
+      driverPos: d.driverPos || null, dismissed: { p: same ? prev.dismissed.p : false, d: true }, rating: d.rating || (same ? prev.rating : 0)
+    };
+    if (same) { t._leg = prev._leg; t._d0 = prev._d0; t.recorded = prev.recorded; t.summary = prev.summary; }
+    const changed = !same || prev.status !== t.status || prev.fare !== t.fare || (!!prev.driver !== !!t.driver);
+    const moved = same && prev.driverPos && t.driverPos && (prev.driverPos.lat !== t.driverPos.lat || prev.driverPos.lng !== t.driverPos.lng);
+    let target = null;
+    if (same && moved && !changed) { target = t.driverPos; t.driverPos = prev.driverPos; }
+    if (same && prev.status === 'accepted' && t.status === 'searching') toast('El conductor canceló. Buscando otro conductor…', 'warn');
+    if (same && prev.status === 'searching' && t.status === 'accepted') { toast('¡Conductor confirmado!', 'ok'); Notify.show('¡Conductor confirmado!', 'Tu conductor va en camino.'); }
+    if (same && prev.status !== 'arrived' && t.status === 'arrived') { toast('Tu conductor llegó. Dile tu PIN al subir.', 'ok'); Sound.play('arrive'); Notify.show('Tu conductor llegó', 'Dile tu PIN al subir.'); }
+    AppState.activeTrip = t; AppState.passenger.tripStatus = t.status;
+    if (t.status === 'searching') {
+      AppState.passenger.offeredFare = t.fare;
+      Timers.set('nooffer', () => { const c = AppState.activeTrip; if (c && c.status === 'searching' && !AppState.offers.length) toast('Aún no hay ofertas. Sube tu tarifa para atraer conductores.', 'info'); }, 60000);
+    } else Timers.clear('nooffer');
+    if (t.status === 'completed' && !t.recorded) {
+      t.recorded = true; Sound.play('success');
+      AppState.history.unshift({ id: t.id, ts: Date.now(), fare: t.fare, payment: t.payment, vehicle: t.vehicle, from: t.pickup.address, to: t.dropoff.address, fromPos: { lat: t.pickup.lat, lng: t.pickup.lng }, toPos: { lat: t.dropoff.lat, lng: t.dropoff.lng }, asDriver: false, asPassenger: true, commission: 0 });
+      Store.save();
+    }
+    if (changed) { Trip.k = 0; t._d0 = null; this.tickProgress(); AppState.ui.collapsed = false; render({ fit: true }); }
+    else if (target) this.tween(target);
+  },
+
+  tween(to) {
+    cancelAnimationFrame(this._anim);
+    const t0 = AppState.activeTrip; if (!t0 || !t0.driverPos) return;
+    const from = { ...t0.driverPos }, start = performance.now();
+    const step = now => {
+      const cur = AppState.activeTrip; if (!cur || cur.id !== t0.id) return;
+      const k = clamp((now - start) / 1200, 0, 1);
+      cur.driverPos = Geo.lerp(from, to, k); this.tickProgress();
+      if (k < 1) this._anim = requestAnimationFrame(step);
+    };
+    this._anim = requestAnimationFrame(step);
+  },
+
+  tickProgress() {
+    const t = AppState.activeTrip; if (!t || !t.driverPos) return;
+    const target = t.status === 'in_progress' ? t.dropoff : t.pickup, dist = Geo.km(t.driverPos, target);
+    if (t._leg !== t.status || !t._d0) { t._leg = t.status; t._d0 = Math.max(dist, 0.05); }
+    Trip.etaTotal = Geo.etaMin(t._d0);
+    UI.progress(clamp(1 - dist / t._d0, 0, 1));
+    MapView.moveMover();
+  },
+
+  async raise() {
+    const t = AppState.activeTrip; if (!t) return;
+    try { await this.col('trips').doc(t.id).update({ fare: this.inc(500) }); toast('Subiste tu oferta $500.', 'ok'); } catch (e) { this.err(e); }
+  },
+  async acceptOffer(o) {
+    const t = AppState.activeTrip; if (!t) return;
+    try {
+      await this.col('trips').doc(t.id).update({ status: 'accepted', driverId: o.id, fare: o.fare, passengerPhone: AppState.account.phone, driverInfo: { name: o.name, plate: o.plate, vehicle: o.vehicle, rating: o.rating || 5, phone: o.phone, nequi: o.nequi }, acceptedAt: this.ts() });
+    } catch (e) { this.err(e); }
+  },
+  cancelTrip(id) { this.col('trips').doc(id).update({ status: 'cancelled' }).catch(e => this.err(e)); },
+  submitRating() {
+    const t = AppState.activeTrip;
+    if (!t || !t.rating || !t.driverId || t.rated) return;
+    const b = this.db.batch();
+    b.update(this.col('trips').doc(t.id), { rating: t.rating });
+    b.update(this.col('drivers').doc(t.driverId), { ratingSum: this.inc(t.rating), ratingCount: this.inc(1), lastRatedTrip: t.id });
+    b.commit().catch(e => console.warn('No se pudo guardar la calificación', e));
+  },
+
+  fresh(x) { const t = x.createdAt && x.createdAt.toMillis ? x.createdAt.toMillis() : Date.now(); return Date.now() - t < 20 * 60000; },
+
+  async driverMeta(id) {
+    const c = this.metaCache[id];
+    if (c && Date.now() - c.t < 60000) return c.v;
+    try {
+      const v = (await this.col('drivers').doc(id).get()).data();
+      const m = { rating: v.ratingCount ? (v.ratingSum / v.ratingCount).toFixed(1) : 'Nuevo', plate: v.plate, name: v.name, vehicle: v.vehicleType };
+      this.metaCache[id] = { t: Date.now(), v: m }; return m;
+    } catch (e) { return null; }
+  },
+
+  async loadSettings() {
+    try {
+      const [g, p] = await Promise.all([this.col('settings').doc('general').get(), this.col('settings').doc('pricing').get()]);
+      if (g.exists) { this.settings = g.data(); if (this.settings.nequi) CONFIG.nequiPlataforma = this.settings.nequi; }
+      if (p.exists) { const v = p.data(); ['moto', 'tuctuc'].forEach(k => { if (v[k]) Fare.rates[k] = Object.assign({}, Fare.rates[k], v[k]); }); }
+      this.applyNotice();
+      if (!AppState.activeTrip) { AppState.passenger.offeredFare = Fare.suggest(); render(); }
+    } catch (e) { console.warn('No se pudieron cargar los ajustes', e); }
+  },
+  applyNotice() {
+    const el = $('#notice'), g = this.settings || {};
+    const msg = g.serviceOpen === false ? (g.notice || 'El servicio está pausado por ahora.') : (g.notice || '');
+    if (el) { el.textContent = msg; el.hidden = !msg; el.className = g.serviceOpen === false ? 'bad' : ''; }
+  },
+
+  async loadHistory() {
+    try {
+      const [a, b] = await Promise.all([this.col('trips').where('passengerId', '==', this.uid).get(), this.col('trips').where('driverId', '==', this.uid).get()]);
+      const rows = [];
+      const add = (d, asD) => {
+        const v = d.data(); if (v.status !== 'completed') return;
+        const ts = v.completedAt && v.completedAt.toMillis ? v.completedAt.toMillis() : (v.createdAt && v.createdAt.toMillis ? v.createdAt.toMillis() : Date.now());
+        rows.push({ id: d.id + (asD ? 'd' : 'p'), ts, fare: v.fare, payment: v.payment, vehicle: v.vehicle, from: v.pickup.address, to: v.dropoff.address, fromPos: { lat: v.pickup.lat, lng: v.pickup.lng }, toPos: { lat: v.dropoff.lat, lng: v.dropoff.lng }, asDriver: asD, asPassenger: !asD, commission: asD ? AppState.driver.commissionPerTrip : 0 });
+      };
+      a.docs.forEach(d => add(d, false)); b.docs.forEach(d => add(d, true));
+      rows.sort((x, y) => y.ts - x.ts);
+      AppState.history = rows.slice(0, 50); Store.save();
+    } catch (e) { console.warn('No se pudo cargar el historial', e); }
+  },
+
+  sos() {
+    const a = AppState.account, t = AppState.activeTrip;
+    const p = AppState.me.status === 'ok' ? AppState.me : ((t && t.driverPos) || AppState.passenger.pickup);
+    this.col('alerts').add({ uid: this.uid, name: a.name, phone: a.phone, role: AppState.currentRole, tripId: t ? t.id : '', lat: p.lat, lng: p.lng, status: 'open', createdAt: this.ts() })
+      .then(() => toast('Alerta enviada a TamboGo.', 'ok')).catch(e => this.err(e));
+  },
+
+  /* ---------- Conductor ---------- */
+  goOnline() {
+    if (AppState.me.status !== 'ok') { GPS.start(); toast('Activa el GPS para conectarte y recibir pasajeros cercanos.', 'warn'); return false; }
+    this.rejected.clear(); this.publish(true);
+    Timers.every('pub', () => this.publish(true), 4000);
+    if (this.unsubs.req) this.unsubs.req();
+    this.unsubs.req = this.col('trips').where('status', '==', 'searching').where('vehicle', '==', AppState.driver.vehicleType).onSnapshot(s => this.onRequests(s), e => this.err(e));
+    return true;
+  },
+  goOffline() {
+    Timers.stopEvery('pub');
+    if (this.unsubs.req) { this.unsubs.req(); delete this.unsubs.req; }
+    AppState.driver.activeRequest = null;
+    if (this.uid) this.col('drivers').doc(this.uid).update({ online: false, updatedAt: this.ts() }).catch(() => {});
+  },
+  publish(online) {
+    if (!this.uid) return;
+    const p = AppState.driverPos;
+    this.col('drivers').doc(this.uid).update({ online, lat: p.lat, lng: p.lng, updatedAt: this.ts() }).catch(() => {});
+    const t = AppState.activeTrip;
+    if (t && t.isRealDriver && t.status !== 'completed') this.col('trips').doc(t.id).update({ driverPos: { lat: p.lat, lng: p.lng } }).catch(() => {});
+  },
+
+  onRequests(snap) {
+    const d = AppState.driver;
+    if (!d.isOnline || AppState.activeTrip) return;
+    const list = snap.docs.map(x => ({ id: x.id, ...x.data() }))
+      .filter(x => !this.rejected.has(x.id) && this.fresh(x) && Geo.km(AppState.driverPos, x.pickup) <= 6)
+      .sort((a, b) => Geo.km(AppState.driverPos, a.pickup) - Geo.km(AppState.driverPos, b.pickup));
+    const cur = d.activeRequest;
+    if (cur) {
+      const still = list.find(x => x.id === cur.id);
+      if (still) { if (cur.status === 'new') cur.fare = still.fare; if (AppState.currentRole === 'driver') render(); return; }
+      d.activeRequest = null;
+    }
+    if (list.length) {
+      const x = list[0];
+      d.activeRequest = { id: x.id, source: 'live', status: this.myOffers.has(x.id) ? 'offered' : 'new', passengerName: x.passengerName, pickup: x.pickup, dropoff: x.dropoff, fare: x.fare, payment: x.payment, vehicle: x.vehicle, distKm: x.distKm || 1, note: x.note || '' };
+      if (d.activeRequest.status === 'new') {
+        Sound.beep(); if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+        Notify.show('Nueva solicitud', `${fmt(x.fare)} · ${shortAddr(x.pickup.address)}`);
+        if (AppState.currentRole !== 'driver') toast('Llegó una solicitud en modo conductor.', 'info');
+      }
+      AppState.ui.collapsed = false;
+    }
+    if (AppState.currentRole === 'driver') render({ fit: true });
+  },
+
+  async sendOffer(r, counter) {
+    const d = AppState.driver, fare = r.fare + (counter ? 500 : 0);
+    try {
+      await this.col('trips').doc(r.id).collection('offers').doc(this.uid).set({ driverId: this.uid, name: d.name, plate: d.plate, vehicle: d.vehicleType, rating: String(AppState.account.driver.rating), phone: d.phone, nequi: d.nequiNumber, fare, eta: Geo.etaMin(Geo.road(AppState.driverPos, r.pickup)), lat: AppState.driverPos.lat, lng: AppState.driverPos.lng, createdAt: this.ts() });
+      this.myOffers.add(r.id); r.status = 'offered';
+      toast(counter ? `Contraoferta de ${fmt(fare)} enviada.` : 'Oferta enviada. Esperando al pasajero.', 'ok');
+      render();
+    } catch (e) { this.err(e); }
+  },
+
+  onDriverTrips(snap) {
+    const cur = AppState.activeTrip;
+    if (snap.empty) { if (cur && cur.isRealDriver && cur.status !== 'completed') Trip.reset('El pasajero canceló el viaje.', 'warn'); return; }
+    const doc = snap.docs[0], v = doc.data(), d = AppState.driver;
+    const same = !!(cur && cur.id === doc.id);
+    const t = {
+      id: doc.id, isRealPassenger: false, isRealDriver: true, passengerName: v.passengerName, passengerPhone: v.passengerPhone || '',
+      pickup: v.pickup, dropoff: v.dropoff, vehicle: v.vehicle, fare: v.fare, payment: v.payment, distKm: v.distKm || 1, note: v.note || '',
+      pin: null, status: v.status, driver: { name: d.name, plate: d.plate, vehicle: d.vehicleType, rating: 5, phone: d.phone, nequi: d.nequiNumber, isReal: true },
+      driverPos: { ...AppState.driverPos }, dismissed: { p: true, d: false }
+    };
+    if (same) { t._leg = cur._leg; t._d0 = cur._d0; }
+    const changed = !same || cur.status !== t.status;
+    AppState.activeTrip = t; d.activeRequest = null;
+    if (changed) { Trip.k = 0; t._d0 = null; this.tickProgress(); AppState.ui.collapsed = false; render({ fit: true }); }
+  },
+
+  async driverStep(status, pin) {
+    const t = AppState.activeTrip; if (!t) return;
+    const data = { status }; if (pin !== undefined) data.pinAttempt = pin;
+    try { await this.col('trips').doc(t.id).update(data); }
+    catch (e) {
+      if (status === 'in_progress') { toast('PIN incorrecto. Pídeselo de nuevo al pasajero.', 'danger'); const i = $('#pin-in'); if (i) { i.classList.add('err'); i.focus(); } }
+      else this.err(e);
+    }
+  },
+
+  async finishTrip() {
+    const t = AppState.activeTrip, d = AppState.driver; if (!t || t.status !== 'in_progress') return;
+    const tr = this.col('trips').doc(t.id), w = this.col('wallets').doc(this.uid);
+    const b = this.db.batch();
+    b.update(tr, { status: 'completed', completedAt: this.ts() });
+    b.update(w, { balance: this.inc(-d.commissionPerTrip), lastTripId: t.id });
+    b.set(w.collection('tx').doc(), { type: 'commission', amount: -d.commissionPerTrip, desc: `Comisión · ${shortAddr(t.pickup.address)} a ${shortAddr(t.dropoff.address)}`, ts: this.ts() });
+    t.summary = { fare: t.fare, commission: d.commissionPerTrip, payment: t.payment };
+    AppState.history.unshift({ id: t.id, ts: Date.now(), fare: t.fare, payment: t.payment, vehicle: t.vehicle, from: t.pickup.address, to: t.dropoff.address, fromPos: { lat: t.pickup.lat, lng: t.pickup.lng }, toPos: { lat: t.dropoff.lat, lng: t.dropoff.lng }, asDriver: true, asPassenger: false, commission: d.commissionPerTrip });
+    Trip.setStatus('completed');
+    try { await b.commit(); }
+    catch (e) { AppState.history.shift(); t.status = 'in_progress'; Trip.setStatus('in_progress'); this.err(e); }
+  },
+
+  async driverCancel() {
+    const t = AppState.activeTrip; if (!t) return;
+    const tr = this.col('trips').doc(t.id), b = this.db.batch();
+    b.update(tr, { status: 'searching', driverId: null, driverInfo: null, driverPos: null });
+    b.delete(tr.collection('offers').doc(this.uid));
+    try { await b.commit(); this.rejected.add(t.id); this.myOffers.delete(t.id); Trip.reset('Cancelaste la carrera.', 'info'); }
+    catch (e) { this.err(e); }
+  },
+
+  /* ---------- Recuperar contraseña: automático, el enlace le llega a la persona a su propio correo ---------- */
+  forceSuspend() {
+    this.goOffline(); AppState.driver.isOnline = false; AppState.activeTrip = null; AppState.offers = [];
+    this.stopAll(); AppState.account = null; AppState.session = false;
+    if (this.auth) this.auth.signOut().catch(() => {});
+    Screens.show('welcome'); toast('Tu cuenta fue suspendida. Escríbenos a soporte.', 'danger');
+  },
+  async phoneTaken(phone) {
+    try { return (await this.col('phoneIndex').doc(phone).get()).exists; } catch (e) { return false; }
+  },
+  async indexPhone(phone, email, uid) {
+    try { await this.col('phoneIndex').doc(phone).set({ email, uid }); } catch (e) { console.warn('No se pudo indexar el celular', e); }
+  },
+  async ensurePhoneIndex(email, uid, phone) {
+    if (!email || !phone) return;
+    try { const d = await this.col('phoneIndex').doc(phone).get(); if (!d.exists) await this.col('phoneIndex').doc(phone).set({ email, uid }); } catch (e) { /* sin permiso o sin conexión */ }
+  },
+  async _reset(email) {
+    const base = location.origin + location.pathname.replace(/[^/]*$/, '');
+    try { await this.auth.sendPasswordResetEmail(email, { url: base + 'index.html' }); }
+    catch (e) {
+      if (e && ['auth/unauthorized-continue-uri', 'auth/invalid-continue-uri', 'auth/missing-continue-uri'].includes(e.code)) await this.auth.sendPasswordResetEmail(email);
+      else throw e;
+    }
+  },
+  async sendReset(email) {
+    email = (email || '').trim().toLowerCase();
+    if (/^3\d{9}$/.test(email)) {
+      let m = null;
+      try { const d = await this.col('phoneIndex').doc(email).get(); m = d.exists ? d.data().email : null; } catch (e0) { m = null; }
+      if (!m) { Screens.show('forgot', { sent: true }); return; }
+      email = m;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { toast('Escribe tu correo o tu celular.', 'warn'); return; }
+    try { await this._reset(email); }
+    catch (e) {
+      const c = e && e.code;
+      if (c === 'auth/too-many-requests') { toast('Demasiados intentos. Espera unos minutos.', 'danger'); return; }
+      if (c === 'auth/network-request-failed') { toast('Sin conexión. Intenta de nuevo.', 'danger'); return; }
+      console.warn(e);
+    }
+    Screens.show('forgot', { sent: true });
+  },
+  changePass() {
+    const a = AppState.account; if (!a || !a.email) return;
+    this._reset(a.email).then(() => toast('Te enviamos un correo a ' + a.email + ' para cambiar tu contraseña.', 'ok')).catch(e => this.err(e));
+  },
+
+  /* ---------- Recargas ---------- */
+  async topup() {
+    const a = AppState.account, u = AppState.ui;
+    try {
+      await this.col('topups').add({ driverId: this.uid, name: a.name, phone: a.phone, amount: u.rechargeAmount, status: 'pending', createdAt: this.ts() });
+      u.rechargeState = 'pending'; UI.modal();
+    } catch (e) { this.err(e); }
+  }
+};
+
+const Onboard = {
+  startPassenger() {
+    const a = AppState.account;
+    if (a) { AppState.session = true; Store.save(); this.enterApp(); return; }
+    Screens.form = { payment: 'cash' }; Screens.show('regPassenger');
+  },
+  startDriver() {
+    const a = AppState.account;
+    if (a && a.driver && a.driver.status === 'approved') { AppState.session = true; AppState.currentRole = 'driver'; Store.save(); this.enterApp(); return; }
+    if (a && a.driver) { Screens.show('driverPending'); return; }
+    Screens.form = { vehicleType: 'moto', name: a ? a.name : '', phone: a ? a.phone : '' };
+    Screens.step = 0; Screens.show('regDriver');
+  },
+  enterApp() {
+    Screens.close();
+    if (AppState.currentRole === 'driver' && !Account.driverOk()) AppState.currentRole = 'passenger';
+    Account.applyDriver();
+    if (AppState.me.status === 'idle' && AppState.passenger.pickupMode === 'gps') GPS.start();
+    if (Live.on) { Live.startListeners(); Live.startDriverListeners(); }
+    render({ fit: true });
+  },
+  boot() {
+    const ref = new URLSearchParams(location.search).get('ref');
+    Screens.show('splash');
+    const go = () => {
+      const a = AppState.account;
+      if (a && AppState.session) {
+        if (ref === 'driver' && !a.driver) this.startDriver(); else this.enterApp();
+      } else if (ref === 'driver') this.startDriver();
+      else if (ref === 'passenger' && !a) this.startPassenger();
+      else Screens.show('welcome');
+    };
+    const wait = new Promise(r => setTimeout(r, 1900));
+    const auth = Live.ready ? Promise.race([Live.ready, new Promise(r => setTimeout(r, 7000))]) : Promise.resolve();
+    Promise.all([wait, auth]).then(go);
+  }
+};
+
+const Viewport = {
+  fix() {
+    const mq = q => !!(window.matchMedia && window.matchMedia(q).matches);
+    const standalone = window.navigator.standalone === true || mq('(display-mode: standalone)') || mq('(display-mode: fullscreen)');
+    const portrait = window.innerHeight >= window.innerWidth;
+    const sh = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    const vv = window.visualViewport ? window.visualViewport.height : 0;
+    let h = Math.max(window.innerHeight, vv, document.documentElement.clientHeight);
+    if (standalone) h = Math.max(h, sh);
+    if (sh > 0) h = Math.min(h, sh);
+    const root = document.documentElement.style;
+    root.setProperty('--app-h', Math.round(h) + 'px');
+    root.setProperty('--extra', '0px');
+    if (MapView.map) MapView.map.invalidateSize();
+  },
+  init() {
+    const go = () => Viewport.fix();
+    ['resize', 'orientationchange', 'pageshow', 'load', 'focus'].forEach(ev => window.addEventListener(ev, () => { go(); setTimeout(go, 250); }));
+    document.addEventListener('visibilitychange', go);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', go);
+    [150, 500, 1200, 2500].forEach(ms => setTimeout(go, ms));
+  }
+};
+
+function applyBrandIcons() {
+  try { $('#fav').href = 'data:image/svg+xml,' + encodeURIComponent(Logo.icon(180)); } catch (e) { /* el ícono es opcional */ }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  Store.load();
+  Sound.init();
+  Live.init();
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+  const paintOnline = () => { $('#offline').hidden = navigator.onLine; };
+  window.addEventListener('online', paintOnline); window.addEventListener('offline', paintOnline); paintOnline();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) Awake.sync(); });
+  AppState.driver.isOnline = false; AppState.passenger.tripStatus = 'idle';
+  $('#hdr-logo').innerHTML = `<button class="flex items-center gap-2 tap" data-act="goHome" aria-label="Ir al inicio de TamboGo">${Logo.icon(28, false)}<span class="text-[15px] hidden min-[400px]:inline">${Logo.word()}</span></button>`;
+  applyBrandIcons();
+  Viewport.fix();
+  Viewport.init();
+  MapView.init();
+  render({ fit: true });
+  setTimeout(() => MapView.map.invalidateSize(), 300);
+  Onboard.boot();
+});
+</script>
+</body>
+</html>
